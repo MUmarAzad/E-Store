@@ -1,0 +1,16 @@
+# Placeholder for SSL certificates
+# In production, use Let's Encrypt or your own certificates
+
+# To generate self-signed certificates for development:
+# openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+#   -keyout privkey.pem -out fullchain.pem \
+#   -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+
+# For production with Let's Encrypt:
+# 1. Install certbot
+# 2. Run: certbot certonly --webroot -w /var/www/certbot -d yourdomain.com
+# 3. Certificates will be saved to /etc/letsencrypt/live/yourdomain.com/
+
+# Files expected in this directory:
+# - fullchain.pem (certificate chain)
+# - privkey.pem (private key)
