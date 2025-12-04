@@ -1,0 +1,318 @@
+# =============================================================================
+# E-Store Docker Compose Configuration
+# Distributed E-Commerce Platform with Microservices Architecture
+# =============================================================================
+
+version: '3.8'
+
+# =============================================================================
+# SERVICES
+# =============================================================================
+services:
+  # ---------------------------------------------------------------------------
+  # API Gateway - Entry point for all client requests
+  # ---------------------------------------------------------------------------
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+      target: development
+    container_name: estore-api-gateway
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - USER_SERVICE_URL=http://user-service:3000
+      - PRODUCT_SERVICE_URL=http://product-service:3001
+      - CART_SERVICE_URL=http://cart-service:3002
+      - ORDER_SERVICE_URL=http://order-service:3003
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key}
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./backend/api-gateway:/app
+      - /app/node_modules
+      - ./backend/shared:/app/shared:ro
+    depends_on:
+      - user-service
+      - product-service
+      - cart-service
+      - order-service
+      - redis
+    networks:
+      - estore-network
+
+  # ---------------------------------------------------------------------------
+  # User Service - Authentication and user management
+  # ---------------------------------------------------------------------------
+  user-service:
+    build:
+      context: ./backend/services/user-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: estore-user-service
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/estore_users
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-your-super-secret-refresh-key}
+      - JWT_EXPIRES_IN=15m
+      - JWT_REFRESH_EXPIRES_IN=7d
+    volumes:
+      - ./backend/services/user-service:/app
+      - /app/node_modules
+      - ./backend/shared:/app/shared:ro
+      - ./backend/config:/app/config:ro
+    depends_on:
+      - mongodb
+    networks:
+      - estore-network
+
+  # ---------------------------------------------------------------------------
+  # Product Service - Product catalog and inventory
+  # ---------------------------------------------------------------------------
+  product-service:
+    build:
+      context: ./backend/services/product-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: estore-product-service
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - MONGODB_URI=mongodb://mongodb:27017/estore_products
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key}
+    volumes:
+      - ./backend/services/product-service:/app
+      - /app/node_modules
+      - ./backend/shared:/app/shared:ro
+      - ./backend/config:/app/config:ro
+      - product-images:/app/uploads
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - estore-network
+
+  # ---------------------------------------------------------------------------
+  # Cart Service - Shopping cart with real-time updates
+  # ---------------------------------------------------------------------------
+  cart-service:
+    build:
+      context: ./backend/services/cart-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: estore-cart-service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - MONGODB_URI=mongodb://mongodb:27017/estore_carts
+      - REDIS_URL=redis://redis:6379
+      - PRODUCT_SERVICE_URL=http://product-service:3001
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key}
+    volumes:
+      - ./backend/services/cart-service:/app
+      - /app/node_modules
+      - ./backend/shared:/app/shared:ro
+      - ./backend/config:/app/config:ro
+    depends_on:
+      - mongodb
+      - redis
+      - product-service
+    networks:
+      - estore-network
+
+  # ---------------------------------------------------------------------------
+  # Order Service - Order processing and management
+  # ---------------------------------------------------------------------------
+  order-service:
+    build:
+      context: ./backend/services/order-service
+      dockerfile: Dockerfile
+      target: development
+    container_name: estore-order-service
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+      - MONGODB_URI=mongodb://mongodb:27017/estore_orders
+      - USER_SERVICE_URL=http://user-service:3000
+      - PRODUCT_SERVICE_URL=http://product-service:3001
+      - CART_SERVICE_URL=http://cart-service:3002
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_xxx}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-your-email@gmail.com}
+      - SMTP_PASS=${SMTP_PASS:-your-app-password}
+    volumes:
+      - ./backend/services/order-service:/app
+      - /app/node_modules
+      - ./backend/shared:/app/shared:ro
+      - ./backend/config:/app/config:ro
+    depends_on:
+      - mongodb
+      - user-service
+      - product-service
+      - cart-service
+    networks:
+      - estore-network
+
+  # ---------------------------------------------------------------------------
+  # Frontend - React application
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: estore-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:4000/api
+      - VITE_SOCKET_URL=http://localhost:4000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+    networks:
+      - estore-network
+
+  # ---------------------------------------------------------------------------
+  # MongoDB - Database
+  # ---------------------------------------------------------------------------
+  mongodb:
+    image: mongo:7
+    container_name: estore-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=estore
+    volumes:
+      - mongodb-data:/data/db
+      - ./docker/mongo-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - estore-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Redis - Caching and session storage
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: estore-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - estore-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # NGINX - Reverse Proxy (Production)
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: estore-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api-gateway
+      - frontend
+    networks:
+      - estore-network
+    profiles:
+      - production
+
+  # ---------------------------------------------------------------------------
+  # Mongo Express - MongoDB Admin UI (Development only)
+  # ---------------------------------------------------------------------------
+  mongo-express:
+    image: mongo-express:latest
+    container_name: estore-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin123
+    depends_on:
+      - mongodb
+    networks:
+      - estore-network
+    profiles:
+      - development
+
+  # ---------------------------------------------------------------------------
+  # Redis Commander - Redis Admin UI (Development only)
+  # ---------------------------------------------------------------------------
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: estore-redis-commander
+    restart: unless-stopped
+    ports:
+      - "8082:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - estore-network
+    profiles:
+      - development
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  estore-network:
+    driver: bridge
+    name: estore-network
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  mongodb-data:
+    name: estore-mongodb-data
+  redis-data:
+    name: estore-redis-data
+  product-images:
+    name: estore-product-images
