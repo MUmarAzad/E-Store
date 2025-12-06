@@ -6,19 +6,19 @@ const express = require('express');
 const router = express.Router();
 
 const authController = require('../controllers/auth.controller');
-const { validate } = require('../../../../shared/middleware');
+const { validateBody } = require('../../../../shared/middleware');
 const { userSchemas } = require('../../../../shared/schemas');
 
 // Public routes
 router.post(
   '/register',
-  validate(userSchemas.register),
+  validateBody(userSchemas.register),
   authController.register
 );
 
 router.post(
   '/login',
-  validate(userSchemas.login),
+  validateBody(userSchemas.login),
   authController.login
 );
 
@@ -29,13 +29,13 @@ router.post(
 
 router.post(
   '/forgot-password',
-  validate(userSchemas.forgotPassword),
+  validateBody(userSchemas.forgotPassword),
   authController.forgotPassword
 );
 
 router.post(
   '/reset-password/:token',
-  validate(userSchemas.resetPassword),
+  validateBody(userSchemas.resetPassword),
   authController.resetPassword
 );
 

@@ -4,7 +4,7 @@
  */
 
 const cloudinary = require('cloudinary').v2;
-const { createLogger } = require('../../../shared/utils/logger');
+const { createLogger } = require('../../../../shared/utils/logger');
 
 const logger = createLogger('cloudinary');
 

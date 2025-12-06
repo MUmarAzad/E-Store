@@ -6,7 +6,7 @@ const express = require('express');
 const router = express.Router();
 
 const cartController = require('../controllers/cart.controller');
-const { authenticate, validate } = require('../../../../shared/middleware');
+const { authenticate, validateBody } = require('../../../../shared/middleware');
 const { cartSchemas } = require('../../../../shared/schemas');
 
 // Middleware to handle both authenticated and guest users
@@ -34,7 +34,7 @@ router.get('/', optionalAuth, cartController.getCart);
 router.post(
   '/items',
   optionalAuth,
-  validate(cartSchemas.addItem),
+  validateBody(cartSchemas.addItem),
   cartController.addItem
 );
 
@@ -42,7 +42,7 @@ router.post(
 router.patch(
   '/items/:itemId',
   optionalAuth,
-  validate(cartSchemas.updateItem),
+  validateBody(cartSchemas.updateItem),
   cartController.updateItem
 );
 
@@ -60,7 +60,7 @@ router.delete('/', optionalAuth, cartController.clearCart);
 router.post(
   '/coupon',
   optionalAuth,
-  validate(cartSchemas.applyCoupon),
+  validateBody(cartSchemas.applyCoupon),
   cartController.applyCoupon
 );
 

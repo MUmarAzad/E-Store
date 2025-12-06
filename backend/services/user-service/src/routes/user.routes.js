@@ -6,7 +6,7 @@ const express = require('express');
 const router = express.Router();
 
 const userController = require('../controllers/user.controller');
-const { authenticate, authorize, validate } = require('../../../../shared/middleware');
+const { authenticate, authorize, validateBody } = require('../../../../shared/middleware');
 const { userSchemas } = require('../../../../shared/schemas');
 
 // All routes require authentication
@@ -22,14 +22,14 @@ router.get('/me', userController.getProfile);
 // Update current user profile
 router.patch(
   '/me',
-  validate(userSchemas.updateProfile),
+  validateBody(userSchemas.updateProfile),
   userController.updateProfile
 );
 
 // Change password
 router.patch(
   '/me/password',
-  validate(userSchemas.changePassword),
+  validateBody(userSchemas.changePassword),
   userController.changePassword
 );
 
@@ -46,14 +46,14 @@ router.get('/me/addresses', userController.getAddresses);
 // Add new address
 router.post(
   '/me/addresses',
-  validate(userSchemas.addAddress),
+  validateBody(userSchemas.addAddress),
   userController.addAddress
 );
 
 // Update address
 router.patch(
   '/me/addresses/:addressId',
-  validate(userSchemas.updateAddress),
+  validateBody(userSchemas.updateAddress),
   userController.updateAddress
 );
 
@@ -85,7 +85,7 @@ router.get(
 router.patch(
   '/:userId',
   authorize('admin'),
-  validate(userSchemas.adminUpdateUser),
+  validateBody(userSchemas.adminUpdateUser),
   userController.updateUser
 );
 

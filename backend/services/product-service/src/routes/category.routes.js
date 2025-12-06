@@ -6,8 +6,8 @@ const express = require('express');
 const router = express.Router();
 
 const categoryController = require('../controllers/category.controller');
-const { authenticate, authorize, validate } = require('../../../../shared/middleware');
-const { productSchemas } = require('../../../../shared/schemas');
+const { authenticate, authorize, validateBody } = require('../../../../shared/middleware');
+const { categorySchemas } = require('../../../../shared/schemas');
 
 // =============================================================================
 // PUBLIC ROUTES
@@ -37,7 +37,7 @@ router.post(
   '/',
   authenticate,
   authorize('admin'),
-  validate(productSchemas.createCategory),
+  validateBody(categorySchemas.create),
   categoryController.createCategory
 );
 
@@ -46,7 +46,7 @@ router.patch(
   '/:categoryId',
   authenticate,
   authorize('admin'),
-  validate(productSchemas.updateCategory),
+  validateBody(categorySchemas.update),
   categoryController.updateCategory
 );
 

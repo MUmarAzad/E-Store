@@ -4,8 +4,6 @@
  */
 
 const { Server } = require('socket.io');
-const { createClient } = require('redis');
-const { createAdapter } = require('@socket.io/redis-adapter');
 const jwt = require('jsonwebtoken');
 
 let io;
@@ -27,6 +25,9 @@ async function initializeSocketProxy(httpServer) {
   // Setup Redis adapter for scaling (optional)
   if (process.env.REDIS_URL) {
     try {
+      const { createClient } = require('redis');
+      const { createAdapter } = require('@socket.io/redis-adapter');
+      
       const pubClient = createClient({ url: process.env.REDIS_URL });
       const subClient = pubClient.duplicate();
       

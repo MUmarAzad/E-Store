@@ -4,16 +4,24 @@
  */
 
 const mongoose = require('mongoose');
-const Order = require('../../../../shared/models/Order');
+const Order = require('../models/Order');
 const { 
   AppError, 
   asyncHandler, 
-  sendResponse,
-  generateOrderNumber 
+  sendResponse
 } = require('../../../../shared/utils');
 const cartService = require('../services/cart.service');
 const paymentService = require('../services/payment.service');
 const notificationService = require('../services/notification.service');
+
+// Generate unique order number (same as in Order model)
+const generateOrderNumber = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `ORD-${year}${month}-${random}`;
+};
 
 /**
  * Create order from cart

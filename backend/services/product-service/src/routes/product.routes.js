@@ -6,7 +6,7 @@ const express = require('express');
 const router = express.Router();
 
 const productController = require('../controllers/product.controller');
-const { authenticate, authorize, validate } = require('../../../../shared/middleware');
+const { authenticate, authorize, validateBody } = require('../../../../shared/middleware');
 const { productSchemas } = require('../../../../shared/schemas');
 const upload = require('../middleware/upload');
 
@@ -41,7 +41,7 @@ router.post(
   '/',
   authenticate,
   authorize('admin'),
-  validate(productSchemas.create),
+  validateBody(productSchemas.create),
   productController.createProduct
 );
 
@@ -50,7 +50,7 @@ router.patch(
   '/:productId',
   authenticate,
   authorize('admin'),
-  validate(productSchemas.update),
+  validateBody(productSchemas.update),
   productController.updateProduct
 );
 

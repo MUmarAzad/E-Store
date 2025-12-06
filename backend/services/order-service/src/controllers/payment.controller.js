@@ -3,7 +3,7 @@
  * Handles Stripe payment processing
  */
 
-const Order = require('../../../../shared/models/Order');
+const Order = require('../models/Order');
 const { AppError, asyncHandler, sendResponse } = require('../../../../shared/utils');
 const paymentService = require('../services/payment.service');
 const notificationService = require('../services/notification.service');
