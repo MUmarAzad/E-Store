@@ -209,6 +209,10 @@ productSchema.virtual('inStock').get(function() {
   return this.inventory.quantity > 0 || this.inventory.allowBackorder;
 });
 
+productSchema.virtual('stock').get(function() {
+  return this.inventory.quantity;
+});
+
 productSchema.virtual('isLowStock').get(function() {
   if (!this.inventory.trackInventory) return false;
   return this.inventory.quantity <= this.inventory.lowStockThreshold && this.inventory.quantity > 0;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, UserCheck, UserX } from 'lucide-react';
+import { Search, Eye, UserCheck, UserX, ShieldCheck } from 'lucide-react';
 import {
   Button,
   Input,
@@ -15,6 +15,7 @@ import {
 import { formatDate } from '@/utils/helpers';
 import { userService } from '@/services/user.service';
 import type { User } from '@/types';
+import toast from 'react-hot-toast';
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -25,6 +26,9 @@ const UserManagement: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [newRole, setNewRole] = useState<string>('');
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -55,9 +59,34 @@ const UserManagement: React.FC = () => {
   const handleToggleActive = async (user: User) => {
     try {
       await userService.toggleUserStatus(user._id);
+      toast.success(`User ${user.isActive ? 'deactivated' : 'activated'} successfully`);
       fetchUsers();
     } catch (error) {
       console.error('Failed to update user:', error);
+      toast.error('Failed to update user status');
+    }
+  };
+
+  const handleOpenRoleModal = (user: User) => {
+    setSelectedUser(user);
+    setNewRole(user.role);
+    setShowRoleModal(true);
+  };
+
+  const handleUpdateRole = async () => {
+    if (!selectedUser || !newRole) return;
+
+    try {
+      setIsUpdatingRole(true);
+      await userService.updateUserRole(selectedUser._id, newRole);
+      toast.success(`User role updated to ${newRole}`);
+      setShowRoleModal(false);
+      fetchUsers();
+    } catch (error) {
+      console.error('Failed to update user role:', error);
+      toast.error('Failed to update user role');
+    } finally {
+      setIsUpdatingRole(false);
     }
   };
 
@@ -186,6 +215,13 @@ const UserManagement: React.FC = () => {
                           <Eye className="h-4 w-4" />
                         </button>
                         <button
+                          onClick={() => handleOpenRoleModal(user)}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                          title="Change Role"
+                        >
+                          <ShieldCheck className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => handleToggleActive(user)}
                           className={`p-2 rounded-lg ${
                             user.isActive
@@ -295,6 +331,67 @@ const UserManagement: React.FC = () => {
                 onClick={() => setShowDetailsModal(false)}
               >
                 Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Change Role Modal */}
+      <Modal
+        isOpen={showRoleModal}
+        onClose={() => !isUpdatingRole && setShowRoleModal(false)}
+        title="Change User Role"
+      >
+        {selectedUser && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+              <Avatar
+                firstName={selectedUser.firstName}
+                lastName={selectedUser.lastName}
+                src={selectedUser.avatar}
+                size="md"
+              />
+              <div>
+                <p className="font-medium">
+                  {selectedUser.firstName} {selectedUser.lastName}
+                </p>
+                <p className="text-sm text-gray-500">{selectedUser.email}</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select New Role
+              </label>
+              <Select
+                options={[
+                  { value: 'customer', label: 'Customer' },
+                  { value: 'seller', label: 'Seller' },
+                  { value: 'admin', label: 'Admin' },
+                ]}
+                value={newRole}
+                onChange={setNewRole}
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                Current role: <span className="font-medium capitalize">{selectedUser.role}</span>
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowRoleModal(false)}
+                disabled={isUpdatingRole}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdateRole}
+                disabled={isUpdatingRole || newRole === selectedUser.role}
+                isLoading={isUpdatingRole}
+              >
+                Update Role
               </Button>
             </div>
           </div>

@@ -13,6 +13,9 @@ const { errorHandler } = require('../../../shared/middleware');
 
 const app = express();
 
+// Enable trust proxy for rate limiting
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 app.use(cors({

@@ -16,6 +16,8 @@ const RegisterForm: React.FC = () => {
   const { isLoading, error } = useAppSelector((state) => state.auth);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   const {
     register,
@@ -34,11 +36,48 @@ const RegisterForm: React.FC = () => {
 
   const onSubmit = async (data: RegisterFormData) => {
     dispatch(clearError());
+    setUserEmail(data.email);
     const result = await dispatch(registerUser(data));
     if (registerUser.fulfilled.match(result)) {
-      navigate(ROUTES.HOME);
+      setRegistrationSuccess(true);
     }
   };
+
+  if (registrationSuccess) {
+    return (
+      <div className="w-full max-w-md">
+        <Alert
+          type="success"
+          message={
+            <div>
+              <p className="font-medium mb-2">Registration Successful!</p>
+              <p className="text-sm">
+                We've sent a verification email to <strong>{userEmail}</strong>.
+                Please check your inbox and click the verification link to activate your account.
+              </p>
+            </div>
+          }
+          className="mb-6"
+        />
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 text-center">
+            Didn't receive the email?{' '}
+            <Link
+              to={ROUTES.RESEND_VERIFICATION}
+              className="font-medium text-primary-600 hover:text-primary-500"
+            >
+              Resend verification email
+            </Link>
+          </p>
+          <Link to={ROUTES.LOGIN}>
+            <Button variant="outline" fullWidth>
+              Back to Login
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md">

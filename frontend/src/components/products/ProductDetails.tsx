@@ -24,14 +24,18 @@ interface ProductDetailsProps {
 const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
   const dispatch = useAppDispatch();
   const { isAuthenticated } = useAppSelector((state) => state.auth);
-  const { isSyncing } = useAppSelector((state) => state.cart);
+  const { isSyncing, cart } = useAppSelector((state) => state.cart);
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
 
+  // Check if product is already in cart
+  const cartItem = cart?.items?.find(item => item.productId === product._id);
+  const isInCart = !!cartItem;
+
   const handleAddToCart = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || isInCart) return;
     
     await dispatch(addToCart({ productId: product._id, quantity }));
     setAddedToCart(true);
@@ -99,7 +103,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
               {typeof product.category === 'object' ? product.category.name : product.category}
             </span>
           )}
-          {product.featured && <Badge variant="primary">Featured</Badge>}
+          {product.isFeatured && <Badge variant="primary">Featured</Badge>}
           {discountPercentage > 0 && (
             <Badge variant="success">-{discountPercentage}% OFF</Badge>
           )}
@@ -173,7 +177,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
               <div className="flex items-center border border-gray-300 rounded-lg">
                 <button
                   onClick={() => handleQuantityChange(-1)}
-                  disabled={quantity <= 1}
+                  disabled={quantity <= 1 || isInCart}
                   className="p-3 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Minus className="h-4 w-4" />
@@ -181,7 +185,7 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
                 <span className="w-12 text-center font-medium">{quantity}</span>
                 <button
                   onClick={() => handleQuantityChange(1)}
-                  disabled={quantity >= product.stock}
+                  disabled={quantity >= product.stock || isInCart}
                   className="p-3 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Plus className="h-4 w-4" />
@@ -193,16 +197,29 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
               <Alert type="success" message="Product added to cart!" />
             )}
 
+            {isInCart && (
+              <Alert type="info" message={`This product is already in your cart (${cartItem?.quantity} item${(cartItem?.quantity ?? 0) > 1 ? 's' : ''})`} />
+            )}
+
             <div className="flex gap-3">
               <Button
-                variant="primary"
+                variant={isInCart ? "secondary" : "primary"}
                 size="lg"
                 onClick={handleAddToCart}
-                disabled={!isAuthenticated || isSyncing}
+                disabled={!isAuthenticated || isSyncing || isInCart}
                 className="flex-1"
               >
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                {isAuthenticated ? 'Add to Cart' : 'Login to Add'}
+                {isInCart ? (
+                  <>
+                    <Check className="h-5 w-5 mr-2" />
+                    Added to Cart
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="h-5 w-5 mr-2" />
+                    {isAuthenticated ? 'Add to Cart' : 'Login to Add'}
+                  </>
+                )}
               </Button>
               <Button variant="outline" size="lg">
                 <Heart className="h-5 w-5" />

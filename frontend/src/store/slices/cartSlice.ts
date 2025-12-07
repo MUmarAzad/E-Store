@@ -88,7 +88,7 @@ const cartSlice = createSlice({
   reducers: {
     setCart: (state, action: PayloadAction<Cart>) => {
       state.cart = action.payload;
-      state.itemCount = action.payload.items.reduce((sum, item) => sum + item.quantity, 0);
+      state.itemCount = action.payload.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
     },
     clearCartState: (state) => {
       state.cart = null;
@@ -112,7 +112,7 @@ const cartSlice = createSlice({
       .addCase(fetchCart.fulfilled, (state, action) => {
         state.isLoading = false;
         state.cart = action.payload;
-        state.itemCount = action.payload.items.reduce((sum, item) => sum + item.quantity, 0);
+        state.itemCount = action.payload.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
       })
       .addCase(fetchCart.rejected, (state, action) => {
         state.isLoading = false;
@@ -128,7 +128,7 @@ const cartSlice = createSlice({
       .addCase(addToCart.fulfilled, (state, action) => {
         state.isSyncing = false;
         state.cart = action.payload;
-        state.itemCount = action.payload.items.reduce((sum, item) => sum + item.quantity, 0);
+        state.itemCount = action.payload.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
       })
       .addCase(addToCart.rejected, (state, action) => {
         state.isSyncing = false;
@@ -144,7 +144,7 @@ const cartSlice = createSlice({
       .addCase(updateCartItem.fulfilled, (state, action) => {
         state.isSyncing = false;
         state.cart = action.payload;
-        state.itemCount = action.payload.items.reduce((sum, item) => sum + item.quantity, 0);
+        state.itemCount = action.payload.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
       })
       .addCase(updateCartItem.rejected, (state, action) => {
         state.isSyncing = false;
@@ -160,7 +160,7 @@ const cartSlice = createSlice({
       .addCase(removeFromCart.fulfilled, (state, action) => {
         state.isSyncing = false;
         state.cart = action.payload;
-        state.itemCount = action.payload.items.reduce((sum, item) => sum + item.quantity, 0);
+        state.itemCount = action.payload.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
       })
       .addCase(removeFromCart.rejected, (state, action) => {
         state.isSyncing = false;
@@ -191,7 +191,7 @@ const cartSlice = createSlice({
       .addCase(mergeGuestCart.fulfilled, (state, action) => {
         state.isSyncing = false;
         state.cart = action.payload;
-        state.itemCount = action.payload.items.reduce((sum, item) => sum + item.quantity, 0);
+        state.itemCount = action.payload.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
       })
       .addCase(mergeGuestCart.rejected, (state, action) => {
         state.isSyncing = false;

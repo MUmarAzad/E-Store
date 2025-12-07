@@ -18,6 +18,11 @@ class SocketService {
     const state = store.getState();
     const token = state.auth.tokens?.accessToken;
 
+    // Don't connect if no token
+    if (!token) {
+      return;
+    }
+
     this.socket = io(SOCKET_URL, {
       auth: {
         token,
@@ -26,6 +31,7 @@ class SocketService {
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      autoConnect: true,
     });
 
     this.setupEventListeners();

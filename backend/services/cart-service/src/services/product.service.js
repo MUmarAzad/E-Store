@@ -24,7 +24,8 @@ const productApi = axios.create({
 const getProduct = async (productId) => {
   try {
     const response = await productApi.get(`/api/products/${productId}`);
-    return response.data.data.product;
+    // Backend returns { success, data: { product } }
+    return response.data.data?.product || response.data.data;
   } catch (error) {
     if (error.response?.status === 404) {
       return null;

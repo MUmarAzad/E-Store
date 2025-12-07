@@ -19,12 +19,39 @@ const {
  */
 const getCartIdentifier = (req) => {
   if (req.user) {
-    return { user: req.user._id };
+    // Handle both _id and userId fields
+    const userId = req.user._id || req.user.userId;
+    return userId ? { userId: userId } : null;
   }
   if (req.sessionId) {
     return { sessionId: req.sessionId };
   }
   return null;
+};
+
+/**
+ * Format cart for response - keep productId as string and product as separate field
+ */
+const formatCartResponse = (cart) => {
+  const cartObj = cart.toObject({ virtuals: true });
+  
+  // Transform items to keep productId as string
+  cartObj.items = cartObj.items.map(item => {
+    const productId = item.productId?._id || item.productId;
+    const product = item.productId?._id ? item.productId : undefined;
+    
+    return {
+      _id: item._id,
+      productId: productId.toString(),
+      product: product,
+      quantity: item.quantity,
+      price: item.price,
+      addedAt: item.addedAt,
+      subtotal: item.subtotal
+    };
+  });
+  
+  return cartObj;
 };
 
 /**
@@ -51,13 +78,13 @@ const getCart = asyncHandler(async (req, res) => {
   }
 
   // Populate product details
-  await cart.populate('items.product', 'name slug images pricing inventory');
+  await cart.populate('items.productId', 'name slug images price inventory stock');
 
   // Calculate totals
   cart.calculateTotals();
   await cart.save();
 
-  return success(res, { cart });
+  return success(res, { cart: formatCartResponse(cart) });
 });
 
 /**
@@ -67,6 +94,7 @@ const getCart = asyncHandler(async (req, res) => {
  */
 const addItem = asyncHandler(async (req, res) => {
   const { productId, quantity = 1, variant } = req.body;
+  
   const identifier = getCartIdentifier(req);
 
   if (!identifier) {
@@ -75,12 +103,16 @@ const addItem = asyncHandler(async (req, res) => {
 
   // Verify product exists and is in stock
   const product = await productService.getProduct(productId);
+  
   if (!product) {
     return notFound(res, 'Product not found');
   }
 
-  if (!product.inventory.inStock || product.inventory.quantity < quantity) {
-    return badRequest(res, 'Product is out of stock or insufficient quantity');
+  // Check stock availability
+  const availableStock = product.stock || product.inventory?.quantity || 0;
+  
+  if (availableStock < quantity) {
+    return badRequest(res, `Only ${availableStock} items available in stock`);
   }
 
   // Find or create cart
@@ -95,7 +127,7 @@ const addItem = asyncHandler(async (req, res) => {
 
   // Check if item already in cart
   const existingItemIndex = cart.items.findIndex(
-    (item) => item.product.toString() === productId &&
+    (item) => item.productId.toString() === productId &&
       JSON.stringify(item.variant) === JSON.stringify(variant)
   );
 
@@ -104,18 +136,18 @@ const addItem = asyncHandler(async (req, res) => {
     const newQuantity = cart.items[existingItemIndex].quantity + quantity;
     
     // Check stock
-    if (newQuantity > product.inventory.quantity) {
-      return badRequest(res, `Only ${product.inventory.quantity} items available`);
+    if (newQuantity > availableStock) {
+      return badRequest(res, `Cannot add more. Only ${availableStock} items available in stock`);
     }
     
     cart.items[existingItemIndex].quantity = newQuantity;
-    cart.items[existingItemIndex].price = product.pricing.salePrice || product.pricing.price;
+    cart.items[existingItemIndex].price = product.price;
   } else {
     // Add new item
     cart.items.push({
-      product: productId,
+      productId: productId,
       quantity,
-      price: product.pricing.salePrice || product.pricing.price,
+      price: product.price,
       variant,
     });
   }
@@ -125,25 +157,26 @@ const addItem = asyncHandler(async (req, res) => {
   await cart.save();
 
   // Populate for response
-  await cart.populate('items.product', 'name slug images pricing inventory');
+  await cart.populate('items.productId', 'name slug images price inventory stock');
 
   // Emit real-time update
-  if (req.user) {
-    socketService.emitCartUpdate(req.user._id.toString(), cart);
+  if (req.user?._id || req.user?.userId) {
+    const userId = req.user._id || req.user.userId;
+    socketService.emitCartUpdate(userId.toString(), cart);
   } else if (req.sessionId) {
     socketService.emitGuestCartUpdate(req.sessionId, cart);
   }
 
-  return success(res, { cart }, 'Item added to cart');
+  return success(res, { cart: formatCartResponse(cart) }, 'Item added to cart');
 });
 
 /**
  * @desc    Update item quantity
- * @route   PATCH /api/cart/items/:itemId
+ * @route   PATCH /api/cart/items/:productId
  * @access  Public (with session) / Private
  */
 const updateItem = asyncHandler(async (req, res) => {
-  const { itemId } = req.params;
+  const { productId } = req.params;
   const { quantity } = req.body;
   const identifier = getCartIdentifier(req);
 
@@ -156,49 +189,55 @@ const updateItem = asyncHandler(async (req, res) => {
     return notFound(res, 'Cart not found');
   }
 
-  const item = cart.items.id(itemId);
+  // Find item by productId
+  const item = cart.items.find(
+    (item) => item.productId.toString() === productId
+  );
+  
   if (!item) {
     return notFound(res, 'Item not found in cart');
   }
 
   // Verify stock
-  const product = await productService.getProduct(item.product.toString());
+  const product = await productService.getProduct(productId);
   if (!product) {
     return notFound(res, 'Product no longer available');
   }
 
-  if (quantity > product.inventory.quantity) {
-    return badRequest(res, `Only ${product.inventory.quantity} items available`);
+  const availableStock = product.stock || product.inventory?.quantity || 0;
+  if (quantity > availableStock) {
+    return badRequest(res, `Only ${availableStock} items available`);
   }
 
   // Update quantity
   item.quantity = quantity;
-  item.price = product.pricing.salePrice || product.pricing.price;
+  item.price = product.price;
 
   // Calculate totals
   cart.calculateTotals();
   await cart.save();
 
   // Populate for response
-  await cart.populate('items.product', 'name slug images pricing inventory');
+  await cart.populate('items.productId', 'name slug images price inventory stock');
 
   // Emit real-time update
-  if (req.user) {
-    socketService.emitCartUpdate(req.user._id.toString(), cart);
+  if (req.user?._id || req.user?.userId) {
+    const userId = req.user._id || req.user.userId;
+    socketService.emitCartUpdate(userId.toString(), cart);
   } else if (req.sessionId) {
     socketService.emitGuestCartUpdate(req.sessionId, cart);
   }
 
-  return success(res, { cart }, 'Cart updated');
+  return success(res, { cart: formatCartResponse(cart) }, 'Cart updated');
 });
 
 /**
  * @desc    Remove item from cart
- * @route   DELETE /api/cart/items/:itemId
+ * @route   DELETE /api/cart/items/:productId
  * @access  Public (with session) / Private
  */
 const removeItem = asyncHandler(async (req, res) => {
-  const { itemId } = req.params;
+  const { productId } = req.params;
   const identifier = getCartIdentifier(req);
 
   if (!identifier) {
@@ -210,31 +249,36 @@ const removeItem = asyncHandler(async (req, res) => {
     return notFound(res, 'Cart not found');
   }
 
-  const item = cart.items.id(itemId);
-  if (!item) {
+  // Find item by productId
+  const itemIndex = cart.items.findIndex(
+    (item) => item.productId.toString() === productId
+  );
+  
+  if (itemIndex === -1) {
     return notFound(res, 'Item not found in cart');
   }
 
   // Remove item
-  cart.items.pull(itemId);
+  cart.items.splice(itemIndex, 1);
 
   // Calculate totals
   cart.calculateTotals();
   await cart.save();
 
   // Populate for response
-  await cart.populate('items.product', 'name slug images pricing inventory');
+  await cart.populate('items.productId', 'name slug images price inventory stock');
 
   // Emit real-time update
-  if (req.user) {
-    socketService.emitItemRemoved(req.user._id.toString(), null, itemId);
-    socketService.emitCartUpdate(req.user._id.toString(), cart);
+  if (req.user?._id || req.user?.userId) {
+    const userId = req.user._id || req.user.userId;
+    socketService.emitItemRemoved(userId.toString(), null, productId);
+    socketService.emitCartUpdate(userId.toString(), cart);
   } else if (req.sessionId) {
-    socketService.emitItemRemoved(null, req.sessionId, itemId);
+    socketService.emitItemRemoved(null, req.sessionId, productId);
     socketService.emitGuestCartUpdate(req.sessionId, cart);
   }
 
-  return success(res, { cart }, 'Item removed from cart');
+  return success(res, { cart: formatCartResponse(cart) }, 'Item removed from cart');
 });
 
 /**
@@ -261,13 +305,14 @@ const clearCart = asyncHandler(async (req, res) => {
   await cart.save();
 
   // Emit real-time update
-  if (req.user) {
-    socketService.emitCartCleared(req.user._id.toString(), null);
+  if (req.user?._id || req.user?.userId) {
+    const userId = req.user._id || req.user.userId;
+    socketService.emitCartCleared(userId.toString(), null);
   } else if (req.sessionId) {
     socketService.emitCartCleared(null, req.sessionId);
   }
 
-  return success(res, { cart }, 'Cart cleared');
+  return success(res, { cart: formatCartResponse(cart) }, 'Cart updated');
 });
 
 /**
@@ -300,7 +345,7 @@ const applyCoupon = asyncHandler(async (req, res) => {
   cart.calculateTotals();
   await cart.save();
 
-  await cart.populate('items.product', 'name slug images pricing inventory');
+  await cart.populate('items.productId', 'name slug images price inventory stock');
 
   return success(res, { cart }, `Coupon ${code} applied`);
 });
@@ -326,7 +371,7 @@ const removeCoupon = asyncHandler(async (req, res) => {
   cart.calculateTotals();
   await cart.save();
 
-  await cart.populate('items.product', 'name slug images pricing inventory');
+  await cart.populate('items.productId', 'name slug images price inventory stock');
 
   return success(res, { cart }, 'Coupon removed');
 });
@@ -347,10 +392,11 @@ const mergeCart = asyncHandler(async (req, res) => {
   const guestCart = await Cart.findOne({ sessionId });
 
   // Get or create user cart
-  let userCart = await Cart.findOne({ user: req.user._id });
+  const userId = req.user._id || req.user.userId;
+  let userCart = await Cart.findOne({ userId: userId });
   if (!userCart) {
     userCart = await Cart.create({
-      user: req.user._id,
+      userId: userId,
       items: [],
       status: 'active',
     });
@@ -360,7 +406,7 @@ const mergeCart = asyncHandler(async (req, res) => {
     // Merge items
     for (const guestItem of guestCart.items) {
       const existingIndex = userCart.items.findIndex(
-        (item) => item.product.toString() === guestItem.product.toString() &&
+        (item) => item.productId.toString() === guestItem.productId.toString() &&
           JSON.stringify(item.variant) === JSON.stringify(guestItem.variant)
       );
 
@@ -386,7 +432,7 @@ const mergeCart = asyncHandler(async (req, res) => {
   userCart.calculateTotals();
   await userCart.save();
 
-  await userCart.populate('items.product', 'name slug images pricing inventory');
+  await userCart.populate('items.productId', 'name slug images price inventory stock');
 
   return success(res, { cart: userCart }, 'Carts merged successfully');
 });
@@ -430,7 +476,7 @@ const validateCart = asyncHandler(async (req, res) => {
   const updatedItems = [];
 
   for (const item of cart.items) {
-    const product = await productService.getProduct(item.product.toString());
+    const product = await productService.getProduct(item.productId.toString());
 
     if (!product) {
       validationErrors.push({
@@ -460,7 +506,7 @@ const validateCart = asyncHandler(async (req, res) => {
     }
 
     // Check if price changed
-    const currentPrice = product.pricing.salePrice || product.pricing.price;
+    const currentPrice = product.price;
     if (item.price !== currentPrice) {
       updatedItems.push({
         itemId: item._id,

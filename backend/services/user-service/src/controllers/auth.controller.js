@@ -37,6 +37,10 @@ const register = asyncHandler(async (req, res) => {
     return conflict(res, 'An account with this email already exists');
   }
 
+  // Generate verification token
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+
   // Create new user
   const user = await User.create({
     firstName,
@@ -44,7 +48,19 @@ const register = asyncHandler(async (req, res) => {
     email: email.toLowerCase(),
     password,
     phone,
+    isVerified: false,
+    verificationToken: hashedToken,
+    verificationTokenExpires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
   });
+
+  // Send verification email
+  try {
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
+    await emailService.sendVerificationEmail(user.email, user.firstName, verificationUrl);
+  } catch (error) {
+    console.error('Failed to send verification email:', error);
+    // Continue with registration even if email fails
+  }
 
   // Generate tokens
   const { accessToken, refreshToken } = await authService.generateTokens(user);
@@ -87,6 +103,12 @@ const login = asyncHandler(async (req, res) => {
     return unauthorized(res, 'Invalid email or password');
   }
 
+  // Check if email is verified (optional: allow login but inform user)
+  // You can uncomment below to block unverified users from logging in
+  // if (!user.isVerified) {
+  //   return unauthorized(res, 'Please verify your email before logging in');
+  // }
+
   // Update last login
   user.lastLogin = new Date();
   await user.save({ validateBeforeSave: false });
@@ -103,7 +125,9 @@ const login = asyncHandler(async (req, res) => {
   return success(res, {
     user: userData,
     accessToken,
-  }, 'Login successful');
+    // Include verification status in response
+    requiresVerification: !user.isVerified,
+  }, user.isVerified ? 'Login successful' : 'Login successful. Please verify your email to access all features.');
 });
 
 /**
@@ -232,6 +256,75 @@ const resetPassword = asyncHandler(async (req, res) => {
   return success(res, null, 'Password reset successful. Please log in with your new password.');
 });
 
+/**
+ * @desc    Verify email with token
+ * @route   POST /api/auth/verify-email/:token
+ * @access  Public
+ */
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+
+  // Hash the token from URL
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+  // Find user with valid verification token
+  const user = await User.findOne({
+    verificationToken: hashedToken,
+    verificationTokenExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return badRequest(res, 'Invalid or expired verification token');
+  }
+
+  // Verify the user
+  user.isVerified = true;
+  user.verificationToken = undefined;
+  user.verificationTokenExpires = undefined;
+  await user.save();
+
+  return success(res, null, 'Email verified successfully. You can now log in.');
+});
+
+/**
+ * @desc    Resend verification email
+ * @route   POST /api/auth/resend-verification
+ * @access  Public
+ */
+const resendVerification = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email: email.toLowerCase() });
+
+  if (!user) {
+    // Return success to prevent email enumeration
+    return success(res, null, 'If an account with that email exists and is unverified, a verification email has been sent.');
+  }
+
+  if (user.isVerified) {
+    return badRequest(res, 'This email is already verified');
+  }
+
+  // Generate new verification token
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+
+  // Save hashed token to user
+  user.verificationToken = hashedToken;
+  user.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  await user.save({ validateBeforeSave: false });
+
+  // Send verification email
+  try {
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
+    await emailService.sendVerificationEmail(user.email, user.firstName, verificationUrl);
+  } catch (error) {
+    console.error('Failed to send verification email:', error);
+  }
+
+  return success(res, null, 'If an account with that email exists and is unverified, a verification email has been sent.');
+});
+
 module.exports = {
   register,
   login,
@@ -239,4 +332,6 @@ module.exports = {
   logout,
   forgotPassword,
   resetPassword,
+  verifyEmail,
+  resendVerification,
 };

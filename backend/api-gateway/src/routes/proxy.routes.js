@@ -25,6 +25,9 @@ function createProxyOptions(targetUrl, pathRewrite = {}) {
     timeout: 30000,
     proxyTimeout: 30000,
     onProxyReq: (proxyReq, req, res) => {
+      console.log(`[PROXY] ${req.method} ${req.originalUrl || req.url} -> ${targetUrl}${proxyReq.path}`);
+      console.log(`[PROXY] Auth header:`, req.headers.authorization ? 'Present' : 'MISSING');
+      
       // Forward request ID
       if (req.id) {
         proxyReq.setHeader('x-request-id', req.id);
@@ -36,22 +39,34 @@ function createProxyOptions(targetUrl, pathRewrite = {}) {
       // Forward authorization header
       if (req.headers.authorization) {
         proxyReq.setHeader('authorization', req.headers.authorization);
+        console.log(`[PROXY] Forwarding auth header:`, req.headers.authorization.substring(0, 20) + '...');
+      } else {
+        console.log(`[PROXY] WARNING: No authorization header in request`);
       }
-
-      // Handle body for non-GET requests
-      if (req.body && Object.keys(req.body).length > 0 && req.method !== 'GET') {
+      
+      // Fix for body forwarding - restream parsed body
+      if (req.body && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' || req.method === 'DELETE')) {
         const bodyData = JSON.stringify(req.body);
+        console.log(`[PROXY] Body present (${bodyData.length} bytes)`);
+        
+        // Must set content-type and length before writing
         proxyReq.setHeader('Content-Type', 'application/json');
         proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+        
+        // Write the body data
         proxyReq.write(bodyData);
+        proxyReq.end(); // Important: end the request stream
       }
     },
     onProxyRes: (proxyRes, req, res) => {
+      console.log(`[PROXY] Response ${proxyRes.statusCode} for ${req.method} ${req.originalUrl || req.url}`);
+      console.log(`[PROXY] Response headers:`, proxyRes.headers);
       // Add service header for debugging
       proxyRes.headers['x-served-by'] = 'api-gateway';
     },
     onError: (err, req, res) => {
-      console.error('Proxy error:', err.message);
+      console.error(`[PROXY] ❌ ERROR for ${req.method} ${req.originalUrl || req.url}:`, err.message);
+      console.error(`[PROXY] Error stack:`, err.stack);
       
       if (!res.headersSent) {
         res.status(502).json({
@@ -72,6 +87,7 @@ function createProxyOptions(targetUrl, pathRewrite = {}) {
 // Auth routes
 router.use('/auth', createProxyMiddleware(
   createProxyOptions(USER_SERVICE_URL, {
+    '^/api/auth': '/api/auth',
     '^/auth': '/api/auth'
   })
 ));
@@ -79,6 +95,7 @@ router.use('/auth', createProxyMiddleware(
 // User routes
 router.use('/users', createProxyMiddleware(
   createProxyOptions(USER_SERVICE_URL, {
+    '^/api/users': '/api/users',
     '^/users': '/api/users'
   })
 ));
@@ -142,6 +159,38 @@ router.use('/payments/webhook', createProxyMiddleware({
 router.use('/payments', createProxyMiddleware(
   createProxyOptions(ORDER_SERVICE_URL, {
     '^/payments': '/api/payments'
+  })
+));
+
+// =============================================================================
+// ADMIN ROUTES
+// =============================================================================
+
+// Admin analytics routes (order service)
+router.use('/admin/analytics', createProxyMiddleware(
+  createProxyOptions(ORDER_SERVICE_URL, {
+    '^/admin/analytics': '/api/admin/analytics'
+  })
+));
+
+// Admin user routes
+router.use('/admin/users', createProxyMiddleware(
+  createProxyOptions(USER_SERVICE_URL, {
+    '^/admin/users': '/api/users'
+  })
+));
+
+// Admin product routes
+router.use('/admin/products', createProxyMiddleware(
+  createProxyOptions(PRODUCT_SERVICE_URL, {
+    '^/admin/products': '/api/products'
+  })
+));
+
+// Admin order routes
+router.use('/admin/orders', createProxyMiddleware(
+  createProxyOptions(ORDER_SERVICE_URL, {
+    '^/admin/orders': '/api/orders'
   })
 ));
 

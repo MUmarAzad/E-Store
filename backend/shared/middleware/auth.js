@@ -36,7 +36,8 @@ const authenticate = async (req, res, next) => {
     
     // Attach user info to request
     req.user = {
-      userId: decoded.userId,
+      _id: decoded.userId,      // For Mongoose queries
+      userId: decoded.userId,   // For consistency
       email: decoded.email,
       role: decoded.role,
     };

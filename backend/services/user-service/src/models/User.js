@@ -99,6 +99,14 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  verificationToken: {
+    type: String,
+    select: false
+  },
+  verificationTokenExpires: {
+    type: Date,
+    select: false
+  },
 
   // Session Management
   refreshToken: {

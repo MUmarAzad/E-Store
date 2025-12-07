@@ -25,6 +25,7 @@ const CheckoutForm: React.FC = () => {
   const { isLoading, error } = useAppSelector((state) => state.orders);
 
   const [currentStep, setCurrentStep] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cod'>('cod');
   const [checkoutData, setCheckoutData] = useState<Partial<CheckoutFormData>>({
     shippingAddress: user?.addresses?.find((a) => a.isDefault) || undefined,
   });
@@ -50,8 +51,10 @@ const CheckoutForm: React.FC = () => {
 
     const orderData: CheckoutFormData = {
       shippingAddress: checkoutData.shippingAddress,
-      paymentMethod: 'card',
-      paymentInfo: checkoutData.paymentInfo || { method: 'card' },
+      paymentMethod: paymentMethod,
+      paymentInfo: paymentMethod === 'card' 
+        ? (checkoutData.paymentInfo || { method: 'card' })
+        : { method: 'cod' },
     };
 
     const result = await dispatch(createOrder(orderData));
@@ -136,14 +139,66 @@ const CheckoutForm: React.FC = () => {
           )}
 
           {currentStep === 2 && (
-            <div>
-              <PaymentForm onSubmit={handlePaymentSubmit} />
-              <button
-                onClick={goBack}
-                className="mt-4 text-gray-600 hover:text-gray-800"
-              >
-                ← Back to Shipping
-              </button>
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold mb-4">Select Payment Method</h3>
+              
+              {/* Payment Method Selection */}
+              <div className="space-y-3">
+                <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                  style={{ borderColor: paymentMethod === 'cod' ? '#667eea' : '#e5e7eb' }}>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="cod"
+                    checked={paymentMethod === 'cod'}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'cod')}
+                    className="h-4 w-4 text-primary-600"
+                  />
+                  <div className="ml-3">
+                    <div className="font-medium text-gray-900">Cash on Delivery</div>
+                    <div className="text-sm text-gray-500">Pay when you receive your order</div>
+                  </div>
+                </label>
+
+                <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                  style={{ borderColor: paymentMethod === 'card' ? '#667eea' : '#e5e7eb' }}>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="card"
+                    checked={paymentMethod === 'card'}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'card')}
+                    className="h-4 w-4 text-primary-600"
+                  />
+                  <div className="ml-3">
+                    <div className="font-medium text-gray-900">Credit/Debit Card</div>
+                    <div className="text-sm text-gray-500">Secure payment with Stripe (Coming Soon)</div>
+                  </div>
+                </label>
+              </div>
+
+              {paymentMethod === 'card' && (
+                <div className="mt-4">
+                  <PaymentForm onSubmit={handlePaymentSubmit} />
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={goBack}
+                >
+                  ← Back to Shipping
+                </Button>
+                {paymentMethod === 'cod' && (
+                  <Button
+                    variant="primary"
+                    onClick={() => setCurrentStep(3)}
+                  >
+                    Continue to Review
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
@@ -193,7 +248,9 @@ const CheckoutForm: React.FC = () => {
                   </button>
                 </div>
                 <p className="text-gray-600 text-sm">
-                  Card ending in {checkoutData.paymentInfo?.cardLast4 || '****'}
+                  {paymentMethod === 'cod' 
+                    ? 'Cash on Delivery' 
+                    : `Card ending in ${checkoutData.paymentInfo?.cardLast4 || '****'}`}
                 </p>
               </div>
 

@@ -222,13 +222,20 @@ const authSlice = createSlice({
         state.isLoading = true;
       })
       .addCase(fetchProfile.fulfilled, (state, action) => {
+        console.log('[authSlice] fetchProfile.fulfilled - payload:', action.payload);
         state.isLoading = false;
+        state.isAuthenticated = true;
         state.user = action.payload;
+        console.log('[authSlice] State after update:', { isAuthenticated: state.isAuthenticated, user: state.user });
         localStorage.setItem('user', JSON.stringify(action.payload));
       })
       .addCase(fetchProfile.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+        // If profile fetch fails, clear auth state
+        state.user = null;
+        state.tokens = null;
+        state.isAuthenticated = false;
       });
 
     // Update Profile

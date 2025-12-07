@@ -35,7 +35,7 @@ const getProfile = asyncHandler(async (req, res) => {
     return notFound(res, 'User not found');
   }
 
-  return success(res, { user: user.toJSON() });
+  return success(res, user.toJSON());
 });
 
 /**
@@ -129,13 +129,13 @@ const deleteAccount = asyncHandler(async (req, res) => {
  * @access  Private
  */
 const getAddresses = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).select('addresses');
+  const user = await User.findById(req.user._id);
 
   if (!user) {
     return notFound(res, 'User not found');
   }
 
-  return success(res, { addresses: user.addresses });
+  return success(res, user.toJSON());
 });
 
 /**
@@ -162,9 +162,7 @@ const addAddress = asyncHandler(async (req, res) => {
   user.addresses.push(req.body);
   await user.save();
 
-  const newAddress = user.addresses[user.addresses.length - 1];
-
-  return created(res, { address: newAddress }, 'Address added successfully');
+  return created(res, user.toJSON(), 'Address added successfully');
 });
 
 /**
@@ -199,7 +197,7 @@ const updateAddress = asyncHandler(async (req, res) => {
 
   await user.save();
 
-  return success(res, { address }, 'Address updated successfully');
+  return success(res, user.toJSON(), 'Address updated successfully');
 });
 
 /**
@@ -232,7 +230,7 @@ const deleteAddress = asyncHandler(async (req, res) => {
 
   await user.save();
 
-  return success(res, null, 'Address deleted successfully');
+  return success(res, user.toJSON(), 'Address deleted successfully');
 });
 
 /**
@@ -260,7 +258,7 @@ const setDefaultAddress = asyncHandler(async (req, res) => {
 
   await user.save();
 
-  return success(res, { address }, 'Default address updated successfully');
+  return success(res, user.toJSON(), 'Default address updated successfully');
 });
 
 // =============================================================================

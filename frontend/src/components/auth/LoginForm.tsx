@@ -13,8 +13,9 @@ import type { LoginFormData } from '@/types';
 const LoginForm: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { isLoading, error } = useAppSelector((state) => state.auth);
+  const { isLoading, error, user } = useAppSelector((state) => state.auth);
   const [showPassword, setShowPassword] = useState(false);
+  const [showVerificationWarning, setShowVerificationWarning] = useState(false);
 
   const {
     register,
@@ -32,6 +33,10 @@ const LoginForm: React.FC = () => {
     dispatch(clearError());
     const result = await dispatch(login(data));
     if (login.fulfilled.match(result)) {
+      // Check if user needs to verify email
+      if (result.payload.user && !result.payload.user.isVerified) {
+        setShowVerificationWarning(true);
+      }
       navigate(ROUTES.HOME);
     }
   };
@@ -50,6 +55,28 @@ const LoginForm: React.FC = () => {
           type="error"
           message={error}
           onClose={() => dispatch(clearError())}
+          className="mb-6"
+        />
+      )}
+
+      {showVerificationWarning && user && !user.isVerified && (
+        <Alert
+          type="warning"
+          message={
+            <div>
+              <p className="font-medium mb-1">Email Not Verified</p>
+              <p className="text-sm">
+                Please verify your email to access all features.{' '}
+                <Link
+                  to={ROUTES.RESEND_VERIFICATION}
+                  className="underline font-medium hover:text-yellow-900"
+                >
+                  Resend verification email
+                </Link>
+              </p>
+            </div>
+          }
+          onClose={() => setShowVerificationWarning(false)}
           className="mb-6"
         />
       )}

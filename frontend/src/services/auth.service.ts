@@ -37,19 +37,19 @@ export const authService = {
 
   // Get Profile
   async getProfile(): Promise<User> {
-    const response = await api.get<{ success: boolean; data: User }>('/users/profile');
+    const response = await api.get<{ success: boolean; data: User }>('/users/me');
     return response.data.data;
   },
 
   // Update Profile
   async updateProfile(data: Partial<User>): Promise<User> {
-    const response = await api.put<{ success: boolean; data: User }>('/users/profile', data);
+    const response = await api.patch<{ success: boolean; data: User }>('/users/me', data);
     return response.data.data;
   },
 
   // Change Password
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {
-    await api.put('/users/password', { currentPassword, newPassword });
+    await api.patch('/users/me/password', { currentPassword, newPassword });
   },
 
   // Forgot Password
@@ -62,16 +62,21 @@ export const authService = {
     await api.post('/auth/reset-password', { token, password });
   },
 
+  // Resend Verification Email
+  async resendVerification(email: string): Promise<void> {
+    await api.post('/auth/resend-verification', { email });
+  },
+
   // Add Address
   async addAddress(address: Omit<Address, '_id'>): Promise<User> {
-    const response = await api.post<{ success: boolean; data: User }>('/users/addresses', address);
+    const response = await api.post<{ success: boolean; data: User }>('/users/me/addresses', address);
     return response.data.data;
   },
 
   // Update Address
   async updateAddress(addressId: string, address: Partial<Address>): Promise<User> {
-    const response = await api.put<{ success: boolean; data: User }>(
-      `/users/addresses/${addressId}`,
+    const response = await api.patch<{ success: boolean; data: User }>(
+      `/users/me/addresses/${addressId}`,
       address
     );
     return response.data.data;
@@ -80,15 +85,15 @@ export const authService = {
   // Delete Address
   async deleteAddress(addressId: string): Promise<User> {
     const response = await api.delete<{ success: boolean; data: User }>(
-      `/users/addresses/${addressId}`
+      `/users/me/addresses/${addressId}`
     );
     return response.data.data;
   },
 
   // Set Default Address
   async setDefaultAddress(addressId: string): Promise<User> {
-    const response = await api.put<{ success: boolean; data: User }>(
-      `/users/addresses/${addressId}/default`
+    const response = await api.patch<{ success: boolean; data: User }>(
+      `/users/me/addresses/${addressId}/default`
     );
     return response.data.data;
   },
@@ -97,7 +102,7 @@ export const authService = {
   async uploadAvatar(file: File): Promise<User> {
     const formData = new FormData();
     formData.append('avatar', file);
-    const response = await api.post<{ success: boolean; data: User }>('/users/avatar', formData, {
+    const response = await api.post<{ success: boolean; data: User }>('/users/me/avatar', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

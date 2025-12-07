@@ -120,7 +120,7 @@ const Header: React.FC = () => {
                       </Link>
                       
                       <Link
-                        to={ROUTES.ACCOUNT.ORDERS}
+                        to={ROUTES.ORDERS}
                         onClick={() => setUserMenuOpen(false)}
                         className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100"
                       >

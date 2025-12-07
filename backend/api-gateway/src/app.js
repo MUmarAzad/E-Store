@@ -16,6 +16,13 @@ const { errorHandler, notFoundHandler } = require('./middleware/error.middleware
 const app = express();
 
 // =============================================================================
+// TRUST PROXY
+// =============================================================================
+
+// Enable trust proxy for rate limiting to work correctly behind proxies
+app.set('trust proxy', 1);
+
+// =============================================================================
 // SECURITY MIDDLEWARE
 // =============================================================================
 
@@ -67,14 +74,8 @@ app.use('/api/auth/register', authLimiter);
 // Cookie parser
 app.use(cookieParser());
 
-// JSON parsing (but not for webhook routes - they need raw body)
-app.use((req, res, next) => {
-  if (req.path === '/api/payments/webhook') {
-    next();
-  } else {
-    express.json({ limit: '10mb' })(req, res, next);
-  }
-});
+// JSON parsing - parse body before proxy
+app.use(express.json({ limit: '10mb' }));
 
 // URL-encoded parsing
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

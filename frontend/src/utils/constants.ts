@@ -57,6 +57,7 @@ export const PAYMENT_METHODS = [
 
 // Countries list (simplified)
 export const COUNTRIES = [
+  { value: 'PK', label: 'Pakistan' },
   { value: 'US', label: 'United States' },
   { value: 'CA', label: 'Canada' },
   { value: 'UK', label: 'United Kingdom' },
@@ -64,7 +65,6 @@ export const COUNTRIES = [
   { value: 'DE', label: 'Germany' },
   { value: 'FR', label: 'France' },
   { value: 'IN', label: 'India' },
-  { value: 'PK', label: 'Pakistan' },
 ] as const;
 
 // File upload limits
@@ -115,6 +115,8 @@ export const ROUTES = {
   REGISTER: '/register',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password',
+  VERIFY_EMAIL: '/verify-email/:token',
+  RESEND_VERIFICATION: '/resend-verification',
   PRODUCTS: '/products',
   PRODUCT_DETAIL: (slug: string) => `/products/${slug}`,
   CART: '/cart',
@@ -124,11 +126,11 @@ export const ROUTES = {
   PROFILE: '/profile',
   ORDER_CONFIRMATION: (id: string) => `/orders/${id}/confirmation`,
   ACCOUNT: {
-    DASHBOARD: '/account',
-    PROFILE: '/account/profile',
-    ORDERS: '/account/orders',
-    ORDER_DETAIL: (id: string) => `/account/orders/${id}`,
-    ADDRESSES: '/account/addresses',
+    DASHBOARD: '/profile',
+    PROFILE: '/profile/profile',
+    ORDERS: '/profile/orders',
+    ORDER_DETAIL: (id: string) => `/profile/orders/${id}`,
+    ADDRESSES: '/profile/addresses',
   },
   ADMIN: '/admin',
   ADMIN_DASHBOARD: '/admin/dashboard',

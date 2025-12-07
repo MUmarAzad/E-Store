@@ -223,7 +223,7 @@ const updateCategory = asyncHandler(async (req, res) => {
 
     const newSlug = updates.slug || currentCategory.slug;
 
-    if (updates.parent) {
+    if (updates.parent && updates.parent !== null) {
       const parentCategory = await Category.findById(updates.parent);
       if (!parentCategory) {
         return badRequest(res, 'Parent category not found');
@@ -233,11 +233,14 @@ const updateCategory = asyncHandler(async (req, res) => {
     } else if (updates.parent === null) {
       updates.path = newSlug;
       updates.level = 0;
-    } else if (updates.slug) {
+    } else if (updates.slug && currentCategory.path) {
       // Just updating slug, recalculate path
       const pathParts = currentCategory.path.split('/');
       pathParts[pathParts.length - 1] = newSlug;
       updates.path = pathParts.join('/');
+    } else if (updates.slug && !currentCategory.path) {
+      // Root category being given a new slug
+      updates.path = newSlug;
     }
   }
 

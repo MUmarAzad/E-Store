@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, ChevronDown } from 'lucide-react';
+import { Search, Eye, ChevronDown, Package, MapPin, CreditCard, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/hooks';
-import { fetchOrders, updateOrderStatus } from '@/store/slices/ordersSlice';
+import { fetchAllOrders, updateOrderStatus } from '@/store/slices/ordersSlice';
 import {
   Input,
   Select,
@@ -10,10 +10,13 @@ import {
   Loading,
   EmptyState,
   Card,
+  Modal,
+  Badge,
 } from '@/components/common';
 import { formatCurrency, formatDate } from '@/utils/helpers';
 import { ROUTES } from '@/utils/constants';
-import type { OrderStatus } from '@/types';
+import type { Order, OrderStatus } from '@/types';
+import toast from 'react-hot-toast';
 
 const OrderManagement: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -24,17 +27,41 @@ const OrderManagement: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   useEffect(() => {
     dispatch(
-      fetchOrders({
+      fetchAllOrders({
         status: statusFilter as OrderStatus | undefined,
       })
     );
   }, [dispatch, currentPage, statusFilter]);
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    await dispatch(updateOrderStatus({ id: orderId, status: newStatus }));
+    try {
+      await dispatch(updateOrderStatus({ id: orderId, status: newStatus }));
+      toast.success('Order status updated successfully');
+    } catch (error) {
+      toast.error('Failed to update order status');
+    }
+  };
+
+  const handleViewOrder = (order: Order) => {
+    setSelectedOrder(order);
+    setShowDetailsModal(true);
+  };
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, 'warning' | 'info' | 'primary' | 'success' | 'error'> = {
+      pending: 'warning',
+      confirmed: 'info',
+      processing: 'info',
+      shipped: 'primary',
+      delivered: 'success',
+      cancelled: 'error',
+    };
+    return <Badge variant={variants[status] || 'default'}>{status}</Badge>;
   };
 
   const statusOptions = [
@@ -162,13 +189,21 @@ const OrderManagement: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <Link
-                        to={`${ROUTES.ADMIN_ORDERS}/${order._id}`}
-                        className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700"
-                      >
-                        <Eye className="h-4 w-4" />
-                        View
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleViewOrder(order)}
+                          className="inline-flex items-center gap-1 px-3 py-1 text-sm text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View
+                        </button>
+                        <Link
+                          to={`${ROUTES.ADMIN_ORDERS}/${order._id}`}
+                          className="text-sm text-gray-500 hover:text-gray-700"
+                        >
+                          Details
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -188,6 +223,187 @@ const OrderManagement: React.FC = () => {
           )}
         </Card>
       )}
+
+      {/* Order Details Modal */}
+      <Modal
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        title="Order Details"
+        size="xl"
+      >
+        {selectedOrder && (
+          <div className="space-y-6">
+            {/* Order Header */}
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedOrder.orderNumber}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Placed on {formatDate(selectedOrder.createdAt)}
+                </p>
+              </div>
+              <div>
+                {getStatusBadge(selectedOrder.status)}
+              </div>
+            </div>
+
+            {/* Customer Information */}
+            <div className="border-t pt-4">
+              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Customer Information
+              </h4>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <p className="text-sm">
+                  <span className="font-medium">Name:</span>{' '}
+                  {selectedOrder.user?.firstName} {selectedOrder.user?.lastName}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Email:</span>{' '}
+                  {selectedOrder.user?.email}
+                </p>
+              </div>
+            </div>
+
+            {/* Shipping Address */}
+            <div className="border-t pt-4">
+              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Shipping Address
+              </h4>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm">
+                  {selectedOrder.shippingAddress.street}
+                </p>
+                <p className="text-sm">
+                  {selectedOrder.shippingAddress.city},{' '}
+                  {selectedOrder.shippingAddress.state}{' '}
+                  {selectedOrder.shippingAddress.zipCode}
+                </p>
+                <p className="text-sm">{selectedOrder.shippingAddress.country}</p>
+              </div>
+            </div>
+
+            {/* Order Items */}
+            <div className="border-t pt-4">
+              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Order Items ({selectedOrder.items.length})
+              </h4>
+              <div className="space-y-3">
+                {selectedOrder.items.map((item, index) => (
+                  <div
+                    key={`${item.productId}-${index}`}
+                    className="flex items-center gap-4 bg-gray-50 rounded-lg p-3"
+                  >
+                    {item.image && (
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">
+                        {item.name}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Qty: {item.quantity} × {formatCurrency(item.price)}
+                      </p>
+                    </div>
+                    <p className="font-medium">
+                      {formatCurrency(item.subtotal)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Summary */}
+            <div className="border-t pt-4">
+              <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Payment Summary
+              </h4>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="font-medium">
+                    {formatCurrency(selectedOrder.pricing.subtotal)}
+                  </span>
+                </div>
+                {selectedOrder.pricing.discount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Discount</span>
+                    <span className="font-medium text-green-600">
+                      -{formatCurrency(selectedOrder.pricing.discount)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Shipping</span>
+                  <span className="font-medium">
+                    {formatCurrency(selectedOrder.pricing.shipping)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Tax</span>
+                  <span className="font-medium">
+                    {formatCurrency(selectedOrder.pricing.tax)}
+                  </span>
+                </div>
+                <div className="border-t pt-2 flex justify-between">
+                  <span className="font-semibold text-gray-900">Total</span>
+                  <span className="font-bold text-lg text-gray-900">
+                    {formatCurrency(selectedOrder.pricing.total)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Status History */}
+            {selectedOrder.statusHistory && selectedOrder.statusHistory.length > 0 && (
+              <div className="border-t pt-4">
+                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Status History
+                </h4>
+                <div className="space-y-3">
+                  {selectedOrder.statusHistory.map((history, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-primary-500 rounded-full mt-2"></div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(history.status)}
+                          <span className="text-sm text-gray-500">
+                            {formatDate(history.timestamp)}
+                          </span>
+                        </div>
+                        {history.note && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {history.note}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="border-t pt-4 flex justify-end gap-2">
+              <Link
+                to={`${ROUTES.ADMIN_ORDERS}/${selectedOrder._id}`}
+                className="px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700"
+              >
+                View Full Details
+              </Link>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

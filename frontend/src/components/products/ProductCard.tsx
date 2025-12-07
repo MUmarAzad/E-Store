@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Star, Eye } from 'lucide-react';
+import { ShoppingCart, Heart, Star, Eye, Check } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import { addToCart } from '@/store/slices/cartSlice';
 import { Button, Badge } from '@/components/common';
@@ -20,13 +20,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onQuickView,
 }) => {
   const dispatch = useAppDispatch();
-  const { isSyncing } = useAppSelector((state) => state.cart);
+  const { isSyncing, cart } = useAppSelector((state) => state.cart);
   const { isAuthenticated } = useAppSelector((state) => state.auth);
+
+  // Check if product is already in cart
+  const isInCart = cart?.items?.some(item => item.productId === product._id) ?? false;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (isAuthenticated) {
+    if (isAuthenticated && !isInCart) {
       dispatch(addToCart({ productId: product._id, quantity: 1 }));
     }
   };
@@ -63,7 +66,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {discountPercentage > 0 && (
             <Badge variant="success">-{discountPercentage}%</Badge>
           )}
-          {product.featured && (
+          {product.isFeatured && (
             <Badge variant="primary">Featured</Badge>
           )}
         </div>
@@ -91,14 +94,23 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {product.stock > 0 && isAuthenticated && (
           <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
             <Button
-              variant="primary"
+              variant={isInCart ? "secondary" : "primary"}
               fullWidth
               size="sm"
               onClick={handleAddToCart}
-              disabled={isSyncing}
+              disabled={isSyncing || isInCart}
             >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Add to Cart
+              {isInCart ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Added to Cart
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Add to Cart
+                </>
+              )}
             </Button>
           </div>
         )}
