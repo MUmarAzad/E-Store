@@ -5,7 +5,7 @@ import { cn } from '@/utils/helpers';
 export interface AlertProps {
   type?: 'success' | 'error' | 'warning' | 'info';
   title?: string;
-  message: string;
+  message: React.ReactNode;
   className?: string;
   onClose?: () => void;
 }
@@ -47,7 +47,7 @@ const Alert: React.FC<AlertProps> = ({ type = 'info', title, message, className,
       <Icon className={cn('h-5 w-5 flex-shrink-0 mt-0.5', styles[type].text)} />
       <div className="flex-1">
         {title && <h4 className={cn('font-medium mb-1', styles[type].text)}>{title}</h4>}
-        <p className={cn('text-sm', styles[type].text)}>{message}</p>
+        <div className={cn('text-sm', styles[type].text)}>{message}</div>
       </div>
       {onClose && (
         <button

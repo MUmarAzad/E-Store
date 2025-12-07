@@ -112,6 +112,15 @@ const passwordChangeSchema = z.object({
 });
 
 /**
+ * Reset Password Schema (for forgot password flow)
+ */
+const resetPasswordSchema = z.object({
+  password: z
+    .string()
+    .min(1, 'Password is required'),
+});
+
+/**
  * Refresh Token Schema
  */
 const refreshTokenSchema = z.object({
@@ -278,14 +287,15 @@ const mergeCartSchema = z.object({
  * Shipping Address Schema (for order)
  */
 const orderAddressSchema = z.object({
-  firstName: z.string().min(2).max(50).trim(),
-  lastName: z.string().min(2).max(50).trim(),
+  firstName: z.string().min(2).max(50).trim().optional(),
+  lastName: z.string().min(2).max(50).trim().optional(),
   street: z.string().min(5).max(200).trim(),
   city: z.string().min(2).max(100).trim(),
   state: z.string().min(2).max(100).trim(),
   zipCode: z.string().min(3).max(20).trim(),
   country: z.string().min(2).max(100).default('Pakistan'),
   phone: z.string().optional(),
+  isDefault: z.boolean().optional(),
 });
 
 /**
@@ -303,12 +313,14 @@ const paymentSchema = z.object({
  */
 const createOrderSchema = z.object({
   shippingAddress: orderAddressSchema,
-  billingAddress: z.union([
-    orderAddressSchema,
-    z.object({ sameAsShipping: z.literal(true) }),
-  ]),
-  payment: paymentSchema,
-  customerNote: z.string().max(500).optional(),
+  billingAddress: orderAddressSchema.optional(),
+  paymentMethod: z.enum(['card', 'cod']),
+  paymentInfo: z.object({
+    method: z.enum(['card', 'cod']),
+    cardLast4: z.string().length(4).optional(),
+    cardBrand: z.string().optional(),
+  }).optional(),
+  notes: z.string().max(500).optional(),
 });
 
 /**
@@ -422,6 +434,7 @@ module.exports = {
   userLoginSchema,
   userProfileUpdateSchema,
   passwordChangeSchema,
+  resetPasswordSchema,
   refreshTokenSchema,
   
   // Address

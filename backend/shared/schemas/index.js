@@ -8,7 +8,7 @@ const userSchemas = {
   changePassword: schemas.passwordChangeSchema,
   refreshToken: schemas.refreshTokenSchema,
   forgotPassword: schemas.userLoginSchema.pick({ email: true }),
-  resetPassword: schemas.passwordChangeSchema.pick({ newPassword: true }),
+  resetPassword: schemas.resetPasswordSchema,
   address: schemas.addressSchema,
   addAddress: schemas.addressSchema,
   updateAddress: schemas.addressSchema.partial(),

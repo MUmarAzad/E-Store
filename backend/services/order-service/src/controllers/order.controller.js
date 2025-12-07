@@ -25,26 +25,47 @@ const generateOrderNumber = () => {
  * POST /api/orders
  */
 const createOrder = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.userId || req.user._id;
   const { shippingAddress, billingAddress, paymentMethod, notes } = req.body;
 
+  console.log('📦 Creating order for user:', userId);
+  console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
+  console.log('📦 Payment method:', paymentMethod);
+
+  // Add user's name to shipping address if not provided
+  if (!shippingAddress.firstName || !shippingAddress.lastName) {
+    // Get user info from user service (already available in req.user)
+    shippingAddress.fullName = `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'Customer';
+  } else {
+    shippingAddress.fullName = `${shippingAddress.firstName} ${shippingAddress.lastName}`;
+  }
+
+  // Get token from request header
+  const token = req.headers.authorization?.split(' ')[1];
+
   // Get cart from Cart Service
-  const cart = await cartService.getCart(userId);
+  const cart = await cartService.getCart(userId, token);
+
+  console.log('📦 Cart from service:', JSON.stringify(cart, null, 2));
+  console.log('📦 Cart items:', cart?.items);
+  console.log('📦 Cart items length:', cart?.items?.length);
 
   if (!cart || !cart.items || cart.items.length === 0) {
-    throw new AppError('Cart is empty', 400);
+    return badRequest(res, 'Cart is empty');
   }
 
   // Calculate totals
   const subtotal = cart.items.reduce((sum, item) => {
-    return sum + (item.price * item.quantity);
+    const price = Number(item.price) || 0;
+    const quantity = Number(item.quantity) || 0;
+    return sum + (price * quantity);
   }, 0);
 
   const shippingCost = subtotal > 100 ? 0 : 10; // Free shipping over $100
   const taxRate = 0.08; // 8% tax
-  const taxAmount = subtotal * taxRate;
-  const discount = cart.discount || 0;
-  const total = subtotal + shippingCost + taxAmount - discount;
+  const taxAmount = Number((subtotal * taxRate).toFixed(2));
+  const discount = Number(cart.discount) || 0;
+  const total = Number((subtotal + shippingCost + taxAmount - discount).toFixed(2));
 
   // Generate unique order number
   const orderNumber = generateOrderNumber();
@@ -52,18 +73,23 @@ const createOrder = asyncHandler(async (req, res) => {
   // Create order
   const order = await Order.create({
     orderNumber,
-    user: userId,
+    userId: userId,
     items: cart.items.map(item => ({
-      product: item.productId,
-      name: item.name,
+      productId: item.productId._id || item.productId,
+      name: item.product?.name || item.name || 'Product',
+      slug: item.product?.slug,
       quantity: item.quantity,
       price: item.price,
-      image: item.image,
+      subtotal: item.subtotal || (item.price * item.quantity),
+      image: item.product?.images?.[0] || item.image,
       variant: item.variant || {}
     })),
     shippingAddress,
     billingAddress: billingAddress || shippingAddress,
-    paymentMethod,
+    payment: {
+      method: paymentMethod === 'cod' ? 'cod' : 'credit_card',
+      status: 'pending'
+    },
     pricing: {
       subtotal,
       shipping: shippingCost,
@@ -115,18 +141,12 @@ const createOrder = asyncHandler(async (req, res) => {
   }
 
   // Clear cart after order creation
-  await cartService.clearCart(userId);
+  await cartService.clearCart(userId, token);
 
   // Send order confirmation notification
   await notificationService.sendOrderConfirmation(order, req.user.email);
 
-  return created(res, {
-    order,
-    paymentIntent: paymentIntent ? {
-      clientSecret: paymentIntent.client_secret,
-      id: paymentIntent.id
-    } : null
-  });
+  return created(res, order);
 });
 
 /**
@@ -134,10 +154,10 @@ const createOrder = asyncHandler(async (req, res) => {
  * GET /api/orders/my-orders
  */
 const getMyOrders = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.userId || req.user._id;
   const { page = 1, limit = 10, status } = req.query;
 
-  const query = { user: userId };
+  const query = { userId: userId };
   if (status) {
     query.status = status;
   }
@@ -165,7 +185,7 @@ const getMyOrders = asyncHandler(async (req, res) => {
  */
 const getOrderById = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
-  const userId = req.user.id;
+  const userId = req.user.userId || req.user._id;
 
   const order = await Order.findById(orderId).lean();
 
@@ -174,7 +194,7 @@ const getOrderById = asyncHandler(async (req, res) => {
   }
 
   // Check if user owns the order or is admin
-  if (order.user.toString() !== userId && req.user.role !== 'admin') {
+  if (order.userId.toString() !== userId && req.user.role !== 'admin') {
     throw new AppError('Not authorized to view this order', 403);
   }
 
@@ -187,7 +207,7 @@ const getOrderById = asyncHandler(async (req, res) => {
  */
 const getOrderByNumber = asyncHandler(async (req, res) => {
   const { orderNumber } = req.params;
-  const userId = req.user.id;
+  const userId = req.user.userId || req.user._id;
 
   const order = await Order.findOne({ orderNumber }).lean();
 
@@ -196,7 +216,7 @@ const getOrderByNumber = asyncHandler(async (req, res) => {
   }
 
   // Check if user owns the order or is admin
-  if (order.user.toString() !== userId && req.user.role !== 'admin') {
+  if (order.userId.toString() !== userId && req.user.role !== 'admin') {
     throw new AppError('Not authorized to view this order', 403);
   }
 
@@ -209,7 +229,7 @@ const getOrderByNumber = asyncHandler(async (req, res) => {
  */
 const cancelOrder = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
-  const userId = req.user.id;
+  const userId = req.user.userId || req.user._id;
 
   const order = await Order.findById(orderId);
 
@@ -218,7 +238,7 @@ const cancelOrder = asyncHandler(async (req, res) => {
   }
 
   // Check if user owns the order
-  if (order.user.toString() !== userId) {
+  if (order.userId.toString() !== userId) {
     throw new AppError('Not authorized to cancel this order', 403);
   }
 
@@ -355,7 +375,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   await order.save();
 
   // Send status update notification
-  const user = await mongoose.model('User').findById(order.user).select('email');
+  const user = await mongoose.model('User').findById(order.userId).select('email');
   if (user) {
     await notificationService.sendOrderStatusUpdate(order, user.email);
   }
@@ -494,7 +514,7 @@ const processRefund = asyncHandler(async (req, res) => {
   await order.save();
 
   // Send refund notification
-  const user = await mongoose.model('User').findById(order.user).select('email');
+  const user = await mongoose.model('User').findById(order.userId).select('email');
   if (user) {
     await notificationService.sendRefundNotification(order, user.email, refundAmount);
   }

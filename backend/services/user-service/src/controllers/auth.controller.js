@@ -199,14 +199,27 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const resetToken = crypto.randomBytes(32).toString('hex');
   const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
+  console.log('[FORGOT-PASSWORD] Reset token generated:', resetToken);
+  console.log('[FORGOT-PASSWORD] Hashed token to save:', hashedToken);
+
   // Save hashed token to user
   user.passwordResetToken = hashedToken;
   user.passwordResetExpires = Date.now() + 60 * 60 * 1000; // 1 hour
-  await user.save({ validateBeforeSave: false });
+  const savedUser = await user.save({ validateBeforeSave: false });
+
+  console.log('[FORGOT-PASSWORD] Token saved to user:', user._id);
+  console.log('[FORGOT-PASSWORD] User token in DB (after save):', savedUser.passwordResetToken);
+  console.log('[FORGOT-PASSWORD] Token expires at:', savedUser.passwordResetExpires);
+  
+  // Verify by fetching from DB
+  const verifyUser = await User.findById(user._id);
+  console.log('[FORGOT-PASSWORD] Verify - Token in DB:', verifyUser.passwordResetToken);
+  console.log('[FORGOT-PASSWORD] Verify - Expires in DB:', verifyUser.passwordResetExpires);
 
   // Send reset email
   try {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    console.log('[FORGOT-PASSWORD] Reset URL:', resetUrl);
     await emailService.sendPasswordResetEmail(user.email, user.firstName, resetUrl);
   } catch (error) {
     // If email fails, clear reset token
@@ -230,6 +243,11 @@ const resetPassword = asyncHandler(async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
 
+  console.log('[RESET-PASSWORD] Token:', token);
+  console.log('[RESET-PASSWORD] Request body:', req.body);
+  console.log('[RESET-PASSWORD] Password length:', password?.length);
+  console.log('[RESET-PASSWORD] Password type:', typeof password);
+
   // Hash the token from URL
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
@@ -239,9 +257,25 @@ const resetPassword = asyncHandler(async (req, res) => {
     passwordResetExpires: { $gt: Date.now() },
   });
 
+  console.log('[RESET-PASSWORD] User found:', !!user);
+  console.log('[RESET-PASSWORD] Token hash:', hashedToken);
+  console.log('[RESET-PASSWORD] Looking for token in DB:', hashedToken);
+  
+  // Debug: find user by email to check their token
+  const userByEmail = await User.findOne({ email: 'umarazad004@gmail.com' });
+  console.log('[RESET-PASSWORD] User by email found:', !!userByEmail);
+  if (userByEmail) {
+    console.log('[RESET-PASSWORD] Stored token in DB:', userByEmail.passwordResetToken);
+    console.log('[RESET-PASSWORD] Token expiry:', userByEmail.passwordResetExpires);
+    console.log('[RESET-PASSWORD] Current time:', Date.now());
+  }
+
   if (!user) {
+    console.log('[RESET-PASSWORD] User not found with token');
     return badRequest(res, 'Invalid or expired password reset token');
   }
+
+  console.log('[RESET-PASSWORD] Updating password for user:', user._id);
 
   // Update password
   user.password = password;
@@ -249,6 +283,8 @@ const resetPassword = asyncHandler(async (req, res) => {
   user.passwordResetExpires = undefined;
   user.passwordChangedAt = new Date();
   await user.save();
+
+  console.log('[RESET-PASSWORD] Password updated successfully');
 
   // Invalidate all existing refresh tokens for this user
   await authService.invalidateAllUserTokens(user._id);
