@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
 import { Button, Card } from '@/components/common';
@@ -10,9 +10,14 @@ const VerifyEmailPage: React.FC = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
+  const hasVerified = useRef(false);
 
   useEffect(() => {
     const verifyEmail = async () => {
+      // Prevent duplicate calls in React Strict Mode
+      if (hasVerified.current) return;
+      hasVerified.current = true;
+
       if (!token) {
         setStatus('error');
         setMessage('Invalid verification link');
@@ -30,10 +35,18 @@ const VerifyEmailPage: React.FC = () => {
         }, 3000);
       } catch (error: any) {
         setStatus('error');
-        setMessage(
-          error.response?.data?.message || 
-          'Verification failed. The link may be invalid or expired.'
-        );
+        const errorMsg = error.response?.data?.message;
+        
+        if (errorMsg?.includes('expired')) {
+          setMessage('This verification link has expired. Please request a new one.');
+        } else if (errorMsg?.includes('Invalid')) {
+          setMessage('This verification link is invalid or has already been used. Please request a new one if needed.');
+        } else {
+          setMessage(
+            errorMsg || 
+            'Verification failed. The link may be invalid or expired.'
+          );
+        }
       }
     };
 

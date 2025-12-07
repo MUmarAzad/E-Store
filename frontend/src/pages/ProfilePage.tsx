@@ -200,19 +200,18 @@ const ProfilePage: React.FC = () => {
       {!user.isVerified && (
         <Alert
           type="warning"
+          title="Email Not Verified"
           message={
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Email Not Verified</p>
-                <p className="text-sm mt-1">
-                  Please verify your email address to access all features.
-                </p>
-              </div>
+            <div className="flex items-start justify-between gap-4">
+              <span className="text-sm">
+                Please verify your email address to access all features.
+              </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleResendVerification}
                 isLoading={isResendingVerification}
+                className="flex-shrink-0"
               >
                 Resend Verification Email
               </Button>
@@ -430,9 +429,9 @@ const ProfilePage: React.FC = () => {
                       <p className="text-gray-600">{address.country}</p>
                     </div>
                     <div className="flex gap-2">
-                      {!address.isDefault && (
+                      {!address.isDefault && address._id && (
                         <button
-                          onClick={() => handleSetDefaultAddress(address._id)}
+                          onClick={() => handleSetDefaultAddress(address._id!)}
                           className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded"
                         >
                           <MapPin className="h-4 w-4" />
@@ -447,12 +446,14 @@ const ProfilePage: React.FC = () => {
                       >
                         <User className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={() => handleDeleteAddress(address._id)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {address._id && (
+                        <button
+                          onClick={() => handleDeleteAddress(address._id!)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </Card>

@@ -16,13 +16,14 @@ export function formatCurrency(amount: number, currency = 'USD'): string {
 
 // Format date
 export function formatDate(
-  date: string | Date,
+  date: string | Date | null | undefined,
   options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   }
 ): string {
+  if (!date) return 'N/A';
   return new Intl.DateTimeFormat('en-US', options).format(new Date(date));
 }
 

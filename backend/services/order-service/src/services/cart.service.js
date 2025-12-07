@@ -21,6 +21,10 @@ const cartClient = axios.create({
  */
 async function getCart(userId, token) {
   try {
+    console.log('🛒 Fetching cart for userId:', userId);
+    console.log('🛒 Using token:', token ? 'Present' : 'Missing');
+    console.log('🛒 Cart service URL:', CART_SERVICE_URL);
+    
     const response = await cartClient.get('/cart', {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -28,8 +32,19 @@ async function getCart(userId, token) {
       }
     });
 
-    return response.data.data;
+    console.log('🛒 Cart service response status:', response.status);
+    console.log('🛒 Cart service response data:', JSON.stringify(response.data, null, 2));
+
+    // Response structure: { success, data: { cart: {...} } }
+    const cart = response.data.data?.cart || null;
+    console.log('🛒 Extracted cart:', cart ? 'Found' : 'Null');
+    
+    return cart;
   } catch (error) {
+    console.error('🛒 Error fetching cart:', error.message);
+    console.error('🛒 Error response:', error.response?.data);
+    console.error('🛒 Error status:', error.response?.status);
+    
     if (error.response?.status === 404) {
       return null;
     }

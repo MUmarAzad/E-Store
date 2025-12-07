@@ -44,8 +44,9 @@ const orderItemSchema = new mongoose.Schema({
 });
 
 const addressSchema = new mongoose.Schema({
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
+  fullName: { type: String },
+  firstName: { type: String },
+  lastName: { type: String },
   street: { type: String, required: true },
   city: { type: String, required: true },
   state: { type: String, required: true },

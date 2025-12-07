@@ -19,6 +19,7 @@ const validate = (schemas) => {
       if (schemas.body) {
         const result = schemas.body.safeParse(req.body);
         if (!result.success) {
+          console.log('[VALIDATION] Body validation failed:', JSON.stringify(result.error.errors, null, 2));
           errors.push(...formatZodErrors(result.error, 'body'));
         } else {
           req.body = result.data; // Use parsed/transformed data

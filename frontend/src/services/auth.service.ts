@@ -59,7 +59,7 @@ export const authService = {
 
   // Reset Password
   async resetPassword(token: string, password: string): Promise<void> {
-    await api.post('/auth/reset-password', { token, password });
+    await api.post(`/auth/reset-password/${token}`, { password });
   },
 
   // Resend Verification Email

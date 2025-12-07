@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
@@ -11,7 +11,7 @@ import authService from '@/services/auth.service';
 
 const resetPasswordSchema = z
   .object({
-    password: passwordSchema,
+    password: z.string().min(1, 'Password is required'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -22,9 +22,8 @@ const resetPasswordSchema = z
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 const ResetPasswordForm: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const token = searchParams.get('token');
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +59,14 @@ const ResetPasswordForm: React.FC = () => {
         navigate(ROUTES.LOGIN);
       }, 3000);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to reset password');
+      // Handle validation errors
+      if (err.response?.data?.error?.details) {
+        const details = err.response.data.error.details;
+        const errorMessages = details.map((d: any) => d.message).join(', ');
+        setError(errorMessages);
+      } else {
+        setError(err.response?.data?.message || 'Failed to reset password');
+      }
     } finally {
       setIsLoading(false);
     }
