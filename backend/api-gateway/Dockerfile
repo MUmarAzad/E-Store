@@ -14,14 +14,17 @@ RUN addgroup -g 1001 -S nodejs && \
 # Development stage
 FROM base AS development
 
+# Set working directory to gateway directory
+WORKDIR /app/api-gateway
+
 # Copy package files
-COPY package*.json ./
+COPY api-gateway/package*.json ./
 
 # Install all dependencies (including dev)
-RUN npm ci
+RUN npm install
 
-# Copy source code
-COPY . .
+# Copy entire backend directory for shared/config access
+COPY . /app
 
 # Set ownership
 RUN chown -R nodejs:nodejs /app
@@ -38,14 +41,17 @@ CMD ["dumb-init", "npm", "run", "dev"]
 # Production build stage
 FROM base AS builder
 
+# Set working directory to gateway directory
+WORKDIR /app/api-gateway
+
 # Copy package files
-COPY package*.json ./
+COPY api-gateway/package*.json ./
 
 # Install all dependencies for building
-RUN npm ci
+RUN npm install
 
-# Copy source code
-COPY . .
+# Copy entire backend directory
+COPY . /app
 
 # Production stage
 FROM base AS production

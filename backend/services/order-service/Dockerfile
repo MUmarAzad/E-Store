@@ -14,14 +14,17 @@ RUN addgroup -g 1001 -S nodejs && \
 # Development stage
 FROM base AS development
 
-# Copy package files
-COPY package*.json ./
+# Set working directory to service directory
+WORKDIR /app/services/order-service
+
+# Copy service package files
+COPY services/order-service/package*.json ./
 
 # Install all dependencies (including dev)
-RUN npm ci
+RUN npm install
 
-# Copy source code
-COPY . .
+# Copy entire backend directory for shared/config access
+COPY . /app
 
 # Set ownership
 RUN chown -R nodejs:nodejs /app
@@ -38,14 +41,17 @@ CMD ["dumb-init", "npm", "run", "dev"]
 # Production build stage
 FROM base AS builder
 
-# Copy package files
-COPY package*.json ./
+# Set working directory to service directory
+WORKDIR /app/services/order-service
+
+# Copy service package files
+COPY services/order-service/package*.json ./
 
 # Install all dependencies for building
-RUN npm ci
+RUN npm install
 
-# Copy source code
-COPY . .
+# Copy entire backend directory
+COPY . /app
 
 # Production stage
 FROM base AS production
