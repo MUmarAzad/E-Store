@@ -223,12 +223,13 @@ const inventoryUpdateSchema = z.object({
  */
 const categorySchema = z.object({
   name: z.string().min(2).max(100).trim(),
+  slug: z.string().min(2).max(100).trim().optional(), // Optional - auto-generated if not provided
   description: z.string().max(500).optional(),
-  parentId: objectId.optional().nullable(),
-  image: z.string().url().optional(),
+  parent: objectId.optional().nullable(), // Changed from parentId to parent to match model
+  image: z.string().url().optional().or(z.literal('')),
   icon: z.string().max(50).optional(),
-  order: z.number().int().min(0).default(0),
-  isActive: z.boolean().default(true),
+  sortOrder: z.number().int().min(0).optional().default(0), // Changed from order to sortOrder
+  isActive: z.boolean().optional().default(true),
 });
 
 /**

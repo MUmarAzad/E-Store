@@ -36,8 +36,16 @@ const getProducts = asyncHandler(async (req, res) => {
     'createdAt', 'name', 'pricing.price', 'ratings.average', 'inventory.quantity'
   ]);
 
-  // Build filter
-  const filter = { isActive: true, isPublished: true };
+  // Build filter - for admin, show all products; for public, filter active only
+  const filter = {};
+  
+  // Only filter by status if not an admin request
+  // Admin requests will have the auth middleware and user role
+  const isAdmin = req.user?.role === 'admin';
+  
+  if (!isAdmin) {
+    filter.status = 'active';
+  }
 
   // Category filter
   if (req.query.category) {
@@ -99,8 +107,7 @@ const searchProducts = asyncHandler(async (req, res) => {
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const filter = {
-    isActive: true,
-    isPublished: true,
+    status: 'active',
     $text: { $search: q },
   };
 
@@ -126,8 +133,7 @@ const getFeaturedProducts = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit) || 8;
 
   const products = await Product.find({
-    isActive: true,
-    isPublished: true,
+    status: 'active',
     isFeatured: true,
   })
     .populate('category', 'name slug')
@@ -146,7 +152,7 @@ const getFeaturedProducts = asyncHandler(async (req, res) => {
 const getProductBySlug = asyncHandler(async (req, res) => {
   const product = await Product.findOne({
     slug: req.params.slug,
-    isActive: true,
+    status: 'active',
   }).populate('category', 'name slug');
 
   if (!product) {
@@ -195,8 +201,7 @@ const getProductsByCategory = asyncHandler(async (req, res) => {
 
   const filter = {
     category: { $in: categoryIds },
-    isActive: true,
-    isPublished: true,
+    status: 'active',
   };
 
   const [products, total] = await Promise.all([
@@ -227,6 +232,12 @@ const createProduct = asyncHandler(async (req, res) => {
   // Generate slug if not provided
   if (!productData.slug) {
     productData.slug = slugify(productData.name);
+  }
+
+  // Check if slug already exists
+  const existingProduct = await Product.findOne({ slug: productData.slug });
+  if (existingProduct) {
+    return conflict(res, `A product with the slug "${productData.slug}" already exists. Please use a different product name.`);
   }
 
   // Verify category exists
@@ -284,7 +295,7 @@ const updateProduct = asyncHandler(async (req, res) => {
 const deleteProduct = asyncHandler(async (req, res) => {
   const product = await Product.findByIdAndUpdate(
     req.params.productId,
-    { isActive: false, deletedAt: new Date() },
+    { status: 'archived', deletedAt: new Date() },
     { new: true }
   );
 
@@ -436,6 +447,87 @@ const bulkUpdateProducts = asyncHandler(async (req, res) => {
   }, `${result.modifiedCount} products updated successfully`);
 });
 
+/**
+ * @desc    Bulk update inventory
+ * @route   PATCH /api/products/bulk/inventory
+ * @access  Private/Admin
+ */
+const bulkUpdateInventory = asyncHandler(async (req, res) => {
+  const { updates } = req.body;
+
+  if (!updates || !Array.isArray(updates) || updates.length === 0) {
+    return badRequest(res, 'Inventory updates are required');
+  }
+
+  const results = {
+    success: [],
+    failed: []
+  };
+
+  for (const update of updates) {
+    try {
+      const { productId, quantity, lowStockThreshold, trackInventory } = update;
+      
+      if (!productId) {
+        results.failed.push({ productId: 'unknown', error: 'Product ID is required' });
+        continue;
+      }
+
+      const inventoryUpdates = {};
+      if (quantity !== undefined) {
+        inventoryUpdates['inventory.quantity'] = quantity;
+        inventoryUpdates['inventory.inStock'] = quantity > 0;
+      }
+      if (lowStockThreshold !== undefined) {
+        inventoryUpdates['inventory.lowStockThreshold'] = lowStockThreshold;
+      }
+      if (trackInventory !== undefined) {
+        inventoryUpdates['inventory.trackInventory'] = trackInventory;
+      }
+
+      const product = await Product.findByIdAndUpdate(
+        productId,
+        { $set: inventoryUpdates },
+        { new: true }
+      );
+
+      if (!product) {
+        results.failed.push({ productId, error: 'Product not found' });
+      } else {
+        results.success.push({ 
+          productId, 
+          name: product.name,
+          inventory: product.inventory 
+        });
+      }
+    } catch (error) {
+      results.failed.push({ productId: update.productId, error: error.message });
+    }
+  }
+
+  return success(res, results, `Bulk inventory update completed: ${results.success.length} successful, ${results.failed.length} failed`);
+});
+
+/**
+ * @desc    Get low stock products
+ * @route   GET /api/products/low-stock
+ * @access  Private/Admin
+ */
+const getLowStockProducts = asyncHandler(async (req, res) => {
+  const { limit = 20 } = req.query;
+
+  const lowStockProducts = await Product.find({
+    'inventory.trackInventory': true,
+    $expr: { $lte: ['$inventory.quantity', '$inventory.lowStockThreshold'] }
+  })
+  .select('name slug inventory images')
+  .sort({ 'inventory.quantity': 1 })
+  .limit(parseInt(limit))
+  .lean();
+
+  return success(res, { products: lowStockProducts });
+});
+
 module.exports = {
   getProducts,
   searchProducts,
@@ -450,4 +542,6 @@ module.exports = {
   deleteImage,
   updateInventory,
   bulkUpdateProducts,
+  bulkUpdateInventory,
+  getLowStockProducts,
 };

@@ -17,9 +17,11 @@ let transporter;
 const initTransporter = () => {
   if (transporter) return transporter;
 
-  // Use different config based on environment
-  if (process.env.NODE_ENV === 'production') {
-    // Production: Use real SMTP
+  // Check if SMTP credentials are configured
+  const hasSmtpConfig = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
+
+  if (hasSmtpConfig) {
+    // Use configured SMTP (Gmail, etc.)
     transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT) || 587,
@@ -29,8 +31,9 @@ const initTransporter = () => {
         pass: process.env.SMTP_PASS,
       },
     });
+    logger.info('Email transporter initialized with configured SMTP');
   } else {
-    // Development: Use Ethereal (fake SMTP)
+    // Fallback to Ethereal for development/testing
     transporter = nodemailer.createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
@@ -39,6 +42,7 @@ const initTransporter = () => {
         pass: process.env.ETHEREAL_PASS || 'ethereal_pass',
       },
     });
+    logger.info('Email transporter initialized with Ethereal (test mode)');
   }
 
   return transporter;
@@ -53,7 +57,7 @@ const sendEmail = async (options) => {
     const transport = initTransporter();
 
     const mailOptions = {
-      from: `"E-Store" <${process.env.SMTP_FROM || 'noreply@estore.com'}>`,
+      from: process.env.EMAIL_FROM || process.env.SMTP_FROM || '"E-Store" <noreply@estore.com>',
       to: options.to,
       subject: options.subject,
       text: options.text,
@@ -146,6 +150,75 @@ The E-Store Team
 };
 
 /**
+ * Send email verification email
+ * @param {string} email - Recipient email
+ * @param {string} name - Recipient name
+ * @param {string} verificationUrl - Email verification URL
+ */
+const sendVerificationEmail = async (email, name, verificationUrl) => {
+  const subject = 'Verify Your Email - E-Store';
+
+  const text = `
+Hello ${name},
+
+Thank you for registering with E-Store!
+
+Please verify your email address by clicking the link below:
+${verificationUrl}
+
+This link will expire in 24 hours.
+
+If you didn't create an account with E-Store, please ignore this email.
+
+Best regards,
+The E-Store Team
+  `.trim();
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your Email</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="color: white; margin: 0;">E-Store</h1>
+  </div>
+  
+  <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+    <h2 style="color: #333;">Welcome to E-Store!</h2>
+    
+    <p>Hello ${name},</p>
+    
+    <p>Thank you for registering with E-Store. We're excited to have you on board!</p>
+    
+    <p>Please verify your email address by clicking the button below:</p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${verificationUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Verify Email Address</a>
+    </div>
+    
+    <p style="color: #666; font-size: 14px;">This link will expire in 24 hours.</p>
+    
+    <p style="color: #666; font-size: 14px;">If you didn't create an account with E-Store, please ignore this email.</p>
+    
+    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+    
+    <p style="color: #999; font-size: 12px; text-align: center;">
+      Best regards,<br>
+      The E-Store Team
+    </p>
+  </div>
+</body>
+</html>
+  `.trim();
+
+  return sendEmail({ to: email, subject, text, html });
+};
+
+/**
  * Send welcome email
  * @param {string} email - Recipient email
  * @param {string} name - Recipient name
@@ -205,5 +278,6 @@ The E-Store Team
 module.exports = {
   sendEmail,
   sendPasswordResetEmail,
+  sendVerificationEmail,
   sendWelcomeEmail,
 };

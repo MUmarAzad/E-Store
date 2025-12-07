@@ -5,3 +5,4 @@ export { cartService } from './cart.service';
 export { orderService } from './order.service';
 export { userService } from './user.service';
 export { socketService } from './socket.service';
+export { analyticsService } from './analytics.service';

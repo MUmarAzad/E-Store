@@ -60,6 +60,7 @@ const ProfilePage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isResendingVerification, setIsResendingVerification] = useState(false);
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -108,18 +109,67 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleAddressSubmit = async (_address: Address) => {
+  const handleAddressSubmit = async (address: Address) => {
     setIsSaving(true);
+    setError(null);
     try {
-      // In a real app, this would call an API to save the address
+      if (editingAddress?._id) {
+        await authService.updateAddress(editingAddress._id, address);
+        setSuccess('Address updated successfully');
+      } else {
+        await authService.addAddress(address);
+        setSuccess('Address added successfully');
+      }
       setShowAddressModal(false);
       setEditingAddress(null);
-      dispatch(fetchProfile());
-      setSuccess('Address saved successfully');
+      await dispatch(fetchProfile()).unwrap();
     } catch (err: any) {
-      setError('Failed to save address');
+      setError(err.response?.data?.message || 'Failed to save address');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAddress = async (addressId: string) => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      await authService.deleteAddress(addressId);
+      await dispatch(fetchProfile()).unwrap();
+      setSuccess('Address deleted successfully');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to delete address');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSetDefaultAddress = async (addressId: string) => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      await authService.setDefaultAddress(addressId);
+      await dispatch(fetchProfile()).unwrap();
+      setSuccess('Default address updated');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to set default address');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!user?.email) return;
+    
+    setIsResendingVerification(true);
+    setError(null);
+    try {
+      await authService.resendVerification(user.email);
+      setSuccess('Verification email sent! Please check your inbox.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to send verification email');
+    } finally {
+      setIsResendingVerification(false);
     }
   };
 
@@ -146,6 +196,31 @@ const ProfilePage: React.FC = () => {
         <Alert type="error" message={error} onClose={() => setError(null)} />
       )}
 
+      {/* Verification Warning */}
+      {!user.isVerified && (
+        <Alert
+          type="warning"
+          message={
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Email Not Verified</p>
+                <p className="text-sm mt-1">
+                  Please verify your email address to access all features.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResendVerification}
+                isLoading={isResendingVerification}
+              >
+                Resend Verification Email
+              </Button>
+            </div>
+          }
+        />
+      )}
+
       {/* Profile Header */}
       <Card className="p-6">
         <div className="flex items-center gap-4">
@@ -162,8 +237,10 @@ const ProfilePage: React.FC = () => {
             <p className="text-gray-500">{user.email}</p>
             <div className="flex items-center gap-2 mt-2">
               <Badge variant="primary">{user.role}</Badge>
-              {user.isVerified && (
+              {user.isVerified ? (
                 <Badge variant="success">Verified</Badge>
+              ) : (
+                <Badge variant="warning">Unverified</Badge>
               )}
             </div>
           </div>
@@ -237,7 +314,7 @@ const ProfilePage: React.FC = () => {
             <Input
               label="Phone (optional)"
               type="tel"
-              placeholder="+1 (555) 000-0000"
+              placeholder="+92 (555) 000-0000"
               error={profileForm.formState.errors.phone?.message}
               {...profileForm.register('phone')}
             />
@@ -353,6 +430,14 @@ const ProfilePage: React.FC = () => {
                       <p className="text-gray-600">{address.country}</p>
                     </div>
                     <div className="flex gap-2">
+                      {!address.isDefault && (
+                        <button
+                          onClick={() => handleSetDefaultAddress(address._id)}
+                          className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded"
+                        >
+                          <MapPin className="h-4 w-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           setEditingAddress(address);
@@ -362,7 +447,10 @@ const ProfilePage: React.FC = () => {
                       >
                         <User className="h-4 w-4" />
                       </button>
-                      <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded">
+                      <button
+                        onClick={() => handleDeleteAddress(address._id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>

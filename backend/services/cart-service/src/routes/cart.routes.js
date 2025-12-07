@@ -40,7 +40,7 @@ router.post(
 
 // Update item quantity
 router.patch(
-  '/items/:itemId',
+  '/items/:productId',
   optionalAuth,
   validateBody(cartSchemas.updateItem),
   cartController.updateItem
@@ -48,7 +48,7 @@ router.patch(
 
 // Remove item from cart
 router.delete(
-  '/items/:itemId',
+  '/items/:productId',
   optionalAuth,
   cartController.removeItem
 );

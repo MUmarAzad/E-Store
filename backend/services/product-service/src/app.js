@@ -19,6 +19,9 @@ const categoryRoutes = require('./routes/category.routes');
 const app = express();
 const logger = createLogger('product-service');
 
+// Enable trust proxy for rate limiting
+app.set('trust proxy', 1);
+
 // =============================================================================
 // MIDDLEWARE
 // =============================================================================

@@ -20,7 +20,7 @@ const categorySchema = new mongoose.Schema({
   },
 
   // Hierarchy (Self-Reference)
-  parentId: {
+  parent: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
     default: null
@@ -32,6 +32,10 @@ const categorySchema = new mongoose.Schema({
   },
   icon: {
     type: String
+  },
+  sortOrder: {
+    type: Number,
+    default: 0
   },
   order: {
     type: Number,
@@ -53,7 +57,7 @@ const categorySchema = new mongoose.Schema({
 categorySchema.virtual('subcategories', {
   ref: 'Category',
   localField: '_id',
-  foreignField: 'parentId'
+  foreignField: 'parent'
 });
 
 // Virtual for product count (requires Products model)
@@ -66,7 +70,8 @@ categorySchema.virtual('productCount', {
 
 // Indexes
 categorySchema.index({ slug: 1 }, { unique: true });
-categorySchema.index({ parentId: 1 });
+categorySchema.index({ parent: 1 });
+categorySchema.index({ isActive: 1, sortOrder: 1 });
 categorySchema.index({ isActive: 1, order: 1 });
 
 // Pre-save: Generate slug from name if not provided
@@ -82,13 +87,13 @@ categorySchema.pre('save', function(next) {
 
 // Static method to get category tree
 categorySchema.statics.getTree = async function() {
-  const categories = await this.find({ isActive: true }).sort({ order: 1 });
+  const categories = await this.find({ isActive: true }).sort({ sortOrder: 1, order: 1 });
   
   const buildTree = (parentId = null) => {
     return categories
       .filter(cat => {
-        if (parentId === null) return cat.parentId === null;
-        return cat.parentId?.toString() === parentId.toString();
+        if (parentId === null) return cat.parent === null;
+        return cat.parent?.toString() === parentId.toString();
       })
       .map(cat => ({
         ...cat.toObject(),

@@ -133,11 +133,11 @@ const ordersSlice = createSlice({
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.orders = action.payload.data;
+        state.orders = action.payload.data || [];
         state.pagination = {
           ...state.pagination,
-          total: action.payload.pagination.total,
-          totalPages: action.payload.pagination.totalPages,
+          total: action.payload.pagination?.total || 0,
+          totalPages: action.payload.pagination?.totalPages || 1,
         };
       })
       .addCase(fetchOrders.rejected, (state, action) => {
@@ -205,11 +205,11 @@ const ordersSlice = createSlice({
       })
       .addCase(fetchAllOrders.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.orders = action.payload.data;
+        state.orders = action.payload.data || [];
         state.pagination = {
           ...state.pagination,
-          total: action.payload.pagination.total,
-          totalPages: action.payload.pagination.totalPages,
+          total: action.payload.pagination?.total || 0,
+          totalPages: action.payload.pagination?.totalPages || 1,
         };
       })
       .addCase(fetchAllOrders.rejected, (state, action) => {

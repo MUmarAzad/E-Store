@@ -43,7 +43,7 @@ router.patch(
 
 // Get all orders (admin)
 router.get(
-  '/admin/all',
+  '/',
   authenticate,
   authorize('admin'),
   orderController.getAllOrders

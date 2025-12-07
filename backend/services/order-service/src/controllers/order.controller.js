@@ -5,11 +5,8 @@
 
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
-const { 
-  AppError, 
-  asyncHandler, 
-  sendResponse
-} = require('../../../../shared/utils');
+const { asyncHandler } = require('../../../../shared/utils');
+const { success, created, notFound, badRequest, paginated } = require('../../../../shared/utils/apiResponse');
 const cartService = require('../services/cart.service');
 const paymentService = require('../services/payment.service');
 const notificationService = require('../services/notification.service');
@@ -101,6 +98,20 @@ const createOrder = asyncHandler(async (req, res) => {
       transactionId: paymentIntent.id
     };
     await order.save();
+  } else if (paymentMethod === 'cod') {
+    // Cash on Delivery - mark as pending
+    order.payment = {
+      method: 'cod',
+      status: 'pending',
+      transactionId: `COD-${orderNumber}`
+    };
+    order.status = 'confirmed'; // COD orders are automatically confirmed
+    order.statusHistory.push({
+      status: 'confirmed',
+      timestamp: new Date(),
+      note: 'Cash on Delivery order confirmed'
+    });
+    await order.save();
   }
 
   // Clear cart after order creation
@@ -109,7 +120,7 @@ const createOrder = asyncHandler(async (req, res) => {
   // Send order confirmation notification
   await notificationService.sendOrderConfirmation(order, req.user.email);
 
-  sendResponse(res, 201, 'Order created successfully', {
+  return created(res, {
     order,
     paymentIntent: paymentIntent ? {
       clientSecret: paymentIntent.client_secret,
@@ -139,14 +150,12 @@ const getMyOrders = asyncHandler(async (req, res) => {
 
   const total = await Order.countDocuments(query);
 
-  sendResponse(res, 200, 'Orders retrieved successfully', {
-    orders,
-    pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      total,
-      pages: Math.ceil(total / limit)
-    }
+  return paginated(res, {
+    data: orders,
+    page: parseInt(page),
+    limit: parseInt(limit),
+    total,
+    message: 'Orders retrieved successfully'
   });
 });
 
@@ -169,7 +178,7 @@ const getOrderById = asyncHandler(async (req, res) => {
     throw new AppError('Not authorized to view this order', 403);
   }
 
-  sendResponse(res, 200, 'Order retrieved successfully', order);
+  return success(res, order, 'Order retrieved successfully');
 });
 
 /**
@@ -191,7 +200,7 @@ const getOrderByNumber = asyncHandler(async (req, res) => {
     throw new AppError('Not authorized to view this order', 403);
   }
 
-  sendResponse(res, 200, 'Order retrieved successfully', order);
+  return success(res, order, 'Order retrieved successfully');
 });
 
 /**
@@ -239,7 +248,7 @@ const cancelOrder = asyncHandler(async (req, res) => {
   // Send cancellation notification
   await notificationService.sendOrderCancellation(order, req.user.email);
 
-  sendResponse(res, 200, 'Order cancelled successfully', order);
+  return success(res, order, 'Order cancelled successfully');
 });
 
 /**
@@ -281,14 +290,11 @@ const getAllOrders = asyncHandler(async (req, res) => {
 
   const total = await Order.countDocuments(query);
 
-  sendResponse(res, 200, 'Orders retrieved successfully', {
-    orders,
-    pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      total,
-      pages: Math.ceil(total / limit)
-    }
+  return paginated(res, {
+    data: orders,
+    page: parseInt(page),
+    limit: parseInt(limit),
+    total
   });
 });
 
@@ -354,7 +360,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     await notificationService.sendOrderStatusUpdate(order, user.email);
   }
 
-  sendResponse(res, 200, 'Order status updated successfully', order);
+  return success(res, order, 'Order status updated successfully');
 });
 
 /**
@@ -429,7 +435,7 @@ const getOrderStats = asyncHandler(async (req, res) => {
     }
   ]);
 
-  sendResponse(res, 200, 'Order statistics retrieved successfully', {
+  return success(res, {
     summary: stats[0] || {
       totalOrders: 0,
       totalRevenue: 0,
@@ -493,7 +499,7 @@ const processRefund = asyncHandler(async (req, res) => {
     await notificationService.sendRefundNotification(order, user.email, refundAmount);
   }
 
-  sendResponse(res, 200, 'Refund processed successfully', {
+  return success(res, {
     order,
     refund: {
       id: refund.id,

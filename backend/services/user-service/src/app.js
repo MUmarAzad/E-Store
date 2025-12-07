@@ -19,6 +19,9 @@ const userRoutes = require('./routes/user.routes');
 const app = express();
 const logger = createLogger('user-service');
 
+// Enable trust proxy for rate limiting
+app.set('trust proxy', 1);
+
 // =============================================================================
 // MIDDLEWARE
 // =============================================================================
@@ -69,6 +72,15 @@ const authLimiter = rateLimit({
 // ROUTES
 // =============================================================================
 
+// Debug middleware to log all requests - BEFORE routes
+app.use((req, res, next) => {
+  console.log(`[USER-SERVICE] ${req.method} ${req.originalUrl || req.path}`);
+  console.log(`[USER-SERVICE] Headers:`, Object.keys(req.headers));
+  console.log(`[USER-SERVICE] Content-Type:`, req.headers['content-type']);
+  console.log(`[USER-SERVICE] Content-Length:`, req.headers['content-length']);
+  next();
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -82,9 +94,11 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin/users', userRoutes);
 
 // 404 handler
 app.use((req, res) => {
+  console.log(`[USER-SERVICE] 404 - ${req.method} ${req.originalUrl} not found`);
   res.status(404).json({
     success: false,
     message: `Route ${req.originalUrl} not found`,

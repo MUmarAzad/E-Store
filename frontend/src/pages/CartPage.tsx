@@ -13,8 +13,12 @@ const CartPage: React.FC = () => {
   const { cart, isLoading, isSyncing } = useAppSelector((state) => state.cart);
   const { isAuthenticated } = useAppSelector((state) => state.auth);
 
-  const handleUpdateQuantity = (productId: string, quantity: number) => {
+  const handleUpdateQuantity = (productId: string, quantity: number, maxStock?: number) => {
     if (quantity < 1) return;
+    if (maxStock && quantity > maxStock) {
+      // Optionally show a toast notification
+      return;
+    }
     dispatch(updateCartItem({ productId, quantity }));
   };
 
@@ -128,7 +132,7 @@ const CartPage: React.FC = () => {
                     <div className="flex items-center border border-gray-300 rounded-lg">
                       <button
                         onClick={() =>
-                          handleUpdateQuantity(item.productId, item.quantity - 1)
+                          handleUpdateQuantity(item.productId, item.quantity - 1, item.product?.stock)
                         }
                         disabled={isSyncing || item.quantity <= 1}
                         className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -140,10 +144,11 @@ const CartPage: React.FC = () => {
                       </span>
                       <button
                         onClick={() =>
-                          handleUpdateQuantity(item.productId, item.quantity + 1)
+                          handleUpdateQuantity(item.productId, item.quantity + 1, item.product?.stock)
                         }
-                        disabled={isSyncing}
-                        className="p-2 hover:bg-gray-100 disabled:opacity-50"
+                        disabled={isSyncing || (item.product?.stock !== undefined && item.quantity >= item.product.stock)}
+                        className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={item.product?.stock !== undefined && item.quantity >= item.product.stock ? 'Maximum stock reached' : ''}
                       >
                         <Plus className="h-4 w-4" />
                       </button>

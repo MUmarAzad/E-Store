@@ -1,5 +1,26 @@
 const mongoose = require('mongoose');
 
+// Define minimal Product schema for population
+// This allows cart-service to populate product details without full Product model
+const productSchema = new mongoose.Schema({
+  name: String,
+  slug: String,
+  images: [String],
+  price: Number,
+  compareAtPrice: Number,
+  inventory: {
+    quantity: Number,
+    trackInventory: Boolean,
+    allowBackorder: Boolean
+  },
+  stock: Number
+}, { strict: false });
+
+// Register Product model if not already registered
+if (!mongoose.models.Product) {
+  mongoose.model('Product', productSchema);
+}
+
 const cartItemSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -102,6 +123,9 @@ cartSchema.methods.recalculate = function() {
   // Round to 2 decimal places
   this.subtotal = Math.round(this.subtotal * 100) / 100;
 };
+
+// Alias for calculateTotals (for controller compatibility)
+cartSchema.methods.calculateTotals = cartSchema.methods.recalculate;
 
 // Method to add item to cart
 cartSchema.methods.addItem = async function(productId, quantity, price) {

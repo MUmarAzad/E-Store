@@ -60,6 +60,7 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
-    "cloudinary": "^2.8.0"
+    "cloudinary": "^2.8.0",
+    "recharts": "^3.5.1"
   }
 }

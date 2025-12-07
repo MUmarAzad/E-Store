@@ -17,6 +17,8 @@ import {
   RegisterPage,
   ForgotPasswordPage,
   ResetPasswordPage,
+  VerifyEmailPage,
+  ResendVerificationPage,
   NotFoundPage,
 } from '@/pages';
 import {
@@ -24,6 +26,7 @@ import {
   ProductManagement,
   OrderManagement,
   UserManagement,
+  CategoryManagement,
 } from '@/components/admin';
 import { Loading } from '@/components/common';
 import { ROUTES } from '@/utils/constants';
@@ -90,19 +93,36 @@ const GuestRoute: React.FC<GuestRouteProps> = ({ children }) => {
 
 const App: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, user, tokens } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
     // Check for stored tokens and attempt to restore session
-    const tokens = getStoredTokens();
-    if (tokens?.accessToken) {
-      dispatch(refreshToken())
+    const storedTokens = getStoredTokens();
+    console.log('[App] Stored tokens:', storedTokens ? 'Present' : 'None');
+    if (storedTokens?.accessToken) {
+      console.log('[App] Attempting to restore session with stored token');
+      // Try to fetch profile with existing token
+      dispatch(fetchProfile())
         .unwrap()
-        .then(() => {
-          dispatch(fetchProfile());
+        .then((profileData) => {
+          console.log('[App] Profile fetched successfully:', profileData);
         })
-        .catch(() => {
-          // Token refresh failed, user will need to login again
+        .catch((error) => {
+          console.log('[App] Profile fetch failed:', error);
+          // If profile fetch fails, try to refresh token
+          console.log('[App] Attempting token refresh');
+          dispatch(refreshToken())
+            .unwrap()
+            .then(() => {
+              console.log('[App] Token refresh successful, fetching profile again');
+              dispatch(fetchProfile());
+            })
+            .catch((refreshError) => {
+              console.log('[App] Token refresh failed:', refreshError);
+              // Token refresh failed, session expired
+              localStorage.removeItem('tokens');
+              localStorage.removeItem('user');
+            });
         });
     }
   }, [dispatch]);
@@ -115,9 +135,12 @@ const App: React.FC = () => {
   }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
-    // Connect to socket when authenticated
-    if (isAuthenticated && user?._id) {
-      socketService.connect(user._id);
+    // Connect to socket when authenticated and user is loaded
+    if (isAuthenticated && user && tokens?.accessToken) {
+      const userId = user._id || (user as any).userId;
+      if (userId) {
+        socketService.connect(userId);
+      }
     } else {
       socketService.disconnect();
     }
@@ -125,7 +148,7 @@ const App: React.FC = () => {
     return () => {
       socketService.disconnect();
     };
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, tokens]);
 
   return (
     <Routes>
@@ -160,6 +183,15 @@ const App: React.FC = () => {
           element={
             <GuestRoute>
               <ResetPasswordPage />
+            </GuestRoute>
+          }
+        />
+        <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
+        <Route
+          path={ROUTES.RESEND_VERIFICATION}
+          element={
+            <GuestRoute>
+              <ResendVerificationPage />
             </GuestRoute>
           }
         />
@@ -226,6 +258,7 @@ const App: React.FC = () => {
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="products" element={<ProductManagement />} />
+        <Route path="categories" element={<CategoryManagement />} />
         <Route path="orders" element={<OrderManagement />} />
         <Route path="orders/:id" element={<OrderManagement />} />
         <Route path="users" element={<UserManagement />} />

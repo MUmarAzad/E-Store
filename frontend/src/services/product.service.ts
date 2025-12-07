@@ -29,8 +29,8 @@ export const productService = {
 
   // Get Product by Slug
   async getProductBySlug(slug: string): Promise<Product> {
-    const response = await api.get<{ success: boolean; data: Product }>(`/products/slug/${slug}`);
-    return response.data.data;
+    const response = await api.get<{ success: boolean; data: { product: Product } }>(`/products/slug/${slug}`);
+    return response.data.data.product;
   },
 
   // Search Products
@@ -43,14 +43,14 @@ export const productService = {
 
   // Create Product (Admin)
   async createProduct(data: ProductFormData): Promise<Product> {
-    const response = await api.post<{ success: boolean; data: Product }>('/products', data);
-    return response.data.data;
+    const response = await api.post<{ success: boolean; data: { product: Product } }>('/products', data);
+    return response.data.data.product;
   },
 
   // Update Product (Admin)
   async updateProduct(id: string, data: Partial<ProductFormData>): Promise<Product> {
-    const response = await api.put<{ success: boolean; data: Product }>(`/products/${id}`, data);
-    return response.data.data;
+    const response = await api.patch<{ success: boolean; data: { product: Product } }>(`/products/${id}`, data);
+    return response.data.data.product;
   },
 
   // Delete Product (Admin)
@@ -66,6 +66,20 @@ export const productService = {
     });
     const response = await api.post<{ success: boolean; data: Product }>(
       `/products/${id}/images`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data.data;
+  },
+
+  // Upload Single Image (Admin) - for image upload during product creation
+  async uploadImage(formData: FormData): Promise<{ url: string; publicId: string }> {
+    const response = await api.post<{ success: boolean; data: { url: string; publicId: string } }>(
+      '/upload/image',
       formData,
       {
         headers: {
@@ -106,8 +120,8 @@ export const productService = {
   },
 
   // Get Categories
-  async getCategories(): Promise<Category[]> {
-    const response = await api.get<{ success: boolean; data: Category[] }>('/categories');
+  async getCategories(): Promise<{ categories: Category[] }> {
+    const response = await api.get<{ success: boolean; data: { categories: Category[] } }>('/categories');
     return response.data.data;
   },
 
@@ -125,7 +139,7 @@ export const productService = {
 
   // Update Category (Admin)
   async updateCategory(id: string, data: Partial<Category>): Promise<Category> {
-    const response = await api.put<{ success: boolean; data: Category }>(`/categories/${id}`, data);
+    const response = await api.patch<{ success: boolean; data: Category }>(`/categories/${id}`, data);
     return response.data.data;
   },
 

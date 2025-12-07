@@ -18,6 +18,9 @@ const cartRoutes = require('./routes/cart.routes');
 const app = express();
 const logger = createLogger('cart-service');
 
+// Enable trust proxy for rate limiting
+app.set('trust proxy', 1);
+
 // =============================================================================
 // MIDDLEWARE
 // =============================================================================

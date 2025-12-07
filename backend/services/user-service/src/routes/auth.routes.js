@@ -40,6 +40,17 @@ router.post(
 );
 
 router.post(
+  '/verify-email/:token',
+  authController.verifyEmail
+);
+
+router.post(
+  '/resend-verification',
+  validateBody(userSchemas.forgotPassword), // Reuse email-only schema
+  authController.resendVerification
+);
+
+router.post(
   '/logout',
   authController.logout
 );

@@ -43,8 +43,7 @@ export interface Product {
   attributes: ProductAttribute[];
   tags: string[];
   status: ProductStatus;
-  isActive: boolean;
-  featured?: boolean;
+  isFeatured?: boolean;
   ratings: ProductRating;
   averageRating?: number;
   numReviews?: number;
@@ -59,6 +58,7 @@ export interface Category {
   description?: string;
   image?: string;
   parentCategory?: string | null;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
