@@ -14,17 +14,18 @@ RUN addgroup -g 1001 -S nodejs && \
 # Development stage
 FROM base AS development
 
+# Copy entire backend directory first
+COPY . /app
+
+# Install root dependencies (shared across all services)
+WORKDIR /app
+RUN npm install
+
 # Set working directory to service directory
 WORKDIR /app/services/cart-service
 
-# Copy service package files
-COPY services/cart-service/package*.json ./
-
-# Install all dependencies (including dev)
+# Install service-specific dependencies
 RUN npm install
-
-# Copy entire backend directory for shared/config access
-COPY . /app
 
 # Set ownership
 RUN chown -R nodejs:nodejs /app

@@ -34,7 +34,7 @@ services:
       - ./backend/api-gateway:/app/api-gateway
       - ./backend/shared:/app/shared:ro
       - ./backend/config:/app/config:ro
-      - /app/node_modules
+      - api-gateway-node-modules:/app/api-gateway/node_modules
     depends_on:
       - user-service
       - product-service
@@ -78,7 +78,7 @@ services:
       - ./backend/services/user-service:/app/services/user-service
       - ./backend/shared:/app/shared:ro
       - ./backend/config:/app/config:ro
-      - /app/node_modules
+      - user-service-node-modules:/app/services/user-service/node_modules
     # MongoDB Atlas - no local dependency needed
     networks:
       - estore-network
@@ -109,7 +109,7 @@ services:
       - ./backend/shared:/app/shared:ro
       - ./backend/config:/app/config:ro
       - product-images:/app/uploads
-      - /app/node_modules
+      - product-service-node-modules:/app/services/product-service/node_modules
     depends_on:
       - redis
     # MongoDB Atlas - no local dependency needed
@@ -139,7 +139,7 @@ services:
       - ./backend/services/cart-service:/app/services/cart-service
       - ./backend/shared:/app/shared:ro
       - ./backend/config:/app/config:ro
-      - /app/node_modules
+      - cart-service-node-modules:/app/services/cart-service/node_modules
     depends_on:
       - redis
       - product-service
@@ -179,7 +179,7 @@ services:
       - ./backend/services/order-service:/app/services/order-service
       - ./backend/shared:/app/shared:ro
       - ./backend/config:/app/config:ro
-      - /app/node_modules
+      - order-service-node-modules:/app/services/order-service/node_modules
     depends_on:
       - user-service
       - product-service
@@ -336,3 +336,13 @@ volumes:
     name: estore-redis-data
   product-images:
     name: estore-product-images
+  user-service-node-modules:
+    name: estore-user-service-node-modules
+  product-service-node-modules:
+    name: estore-product-service-node-modules
+  cart-service-node-modules:
+    name: estore-cart-service-node-modules
+  order-service-node-modules:
+    name: estore-order-service-node-modules
+  api-gateway-node-modules:
+    name: estore-api-gateway-node-modules

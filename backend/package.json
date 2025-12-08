@@ -1,0 +1,39 @@
+{
+  "name": "estore-backend",
+  "version": "1.0.0",
+  "description": "E-Store Backend - Shared Dependencies",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "npm install && cd services/user-service && npm install && cd ../product-service && npm install && cd ../cart-service && npm install && cd ../order-service && npm install && cd ../../api-gateway && npm install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.3",
+    "jsonwebtoken": "^9.0.2",
+    "axios": "^1.6.7",
+    "mongodb": "^6.3.0",
+    "mongoose": "^8.2.1",
+    "dotenv": "^16.4.5",
+    "zod": "^3.22.4",
+    "@socket.io/redis-adapter": "^8.1.0",
+    "socket.io": "^4.7.4",
+    "redis": "^4.6.13",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "uuid": "^9.0.1",
+    "bcryptjs": "^2.4.3",
+    "express-rate-limit": "^7.2.0",
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.33.2",
+    "cookie-parser": "^1.4.7",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.12",
+    "pdfkit": "^0.15.0",
+    "stripe": "^14.21.0",
+    "http-proxy-middleware": "^2.0.6",
+    "cloudinary": "^1.41.3"
+  }
+}
