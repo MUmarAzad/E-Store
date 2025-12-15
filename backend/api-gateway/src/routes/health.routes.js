@@ -36,7 +36,7 @@ router.get('/health/all', async (req, res) => {
   await Promise.all(
     Object.entries(services).map(async ([name, url]) => {
       try {
-        const response = await axios.get(`${url}/api/health`, {
+        const response = await axios.get(`${url}/health`, {
           timeout: 5000
         });
         healthChecks[name] = {

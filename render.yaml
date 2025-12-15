@@ -14,7 +14,7 @@ services:
     plan: free
     rootDir: backend
     dockerfilePath: ./api-gateway/Dockerfile
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -58,7 +58,7 @@ services:
     plan: free
     rootDir: backend
     dockerfilePath: ./services/user-service/Dockerfile
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -98,7 +98,7 @@ services:
     plan: free
     rootDir: backend
     dockerfilePath: ./services/product-service/Dockerfile
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -133,7 +133,7 @@ services:
     plan: free
     rootDir: backend
     dockerfilePath: ./services/cart-service/Dockerfile
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -167,7 +167,7 @@ services:
     plan: free
     rootDir: backend
     dockerfilePath: ./services/order-service/Dockerfile
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
