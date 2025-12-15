@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
@@ -12,7 +12,6 @@ import type { RegisterFormData } from '@/types';
 
 const RegisterForm: React.FC = () => {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const { isLoading, error } = useAppSelector((state) => state.auth);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);

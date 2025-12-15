@@ -26,7 +26,15 @@ async function initializeSocketProxy(httpServer) {
   if (process.env.REDIS_URL) {
     try {
       const { createClient } = require('redis');
-      const { createAdapter } = require('@socket.io/redis-adapter');
+      
+      // Check if Redis adapter is available
+      let createAdapter;
+      try {
+        createAdapter = require('@socket.io/redis-adapter').createAdapter;
+      } catch (e) {
+        console.warn('⚠️ @socket.io/redis-adapter not installed, using memory adapter');
+        return;
+      }
       
       const pubClient = createClient({ url: process.env.REDIS_URL });
       const subClient = pubClient.duplicate();

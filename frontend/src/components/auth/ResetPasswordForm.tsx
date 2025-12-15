@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { z } from 'zod';
 import { Button, Input, Alert } from '@/components/common';
-import { passwordSchema } from '@/utils/validation';
 import { ROUTES } from '@/utils/constants';
 import authService from '@/services/auth.service';
 
