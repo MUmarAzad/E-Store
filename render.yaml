@@ -216,10 +216,9 @@ services:
   # ---------------------------------------------------------------------------
   # Frontend (Static Site)
   # ---------------------------------------------------------------------------
-  - type: web
+  - type: static
     name: estore-frontend
     runtime: static
-    region: oregon
     plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
@@ -252,3 +251,4 @@ services:
     region: oregon
     plan: free
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
