@@ -45,7 +45,7 @@ services:
       - key: REDIS_URL
         fromService:
           type: redis
-          name: estore-cache
+          name: estore-redis
           property: connectionString
 
   # ---------------------------------------------------------------------------
@@ -114,7 +114,7 @@ services:
       - key: REDIS_URL
         fromService:
           type: redis
-          name: estore-cache
+          name: estore-redis
           property: connectionString
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
@@ -149,7 +149,7 @@ services:
       - key: REDIS_URL
         fromService:
           type: redis
-          name: estore-cache
+          name: estore-redis
           property: connectionString
       - key: PRODUCT_SERVICE_URL
         fromService:
@@ -232,10 +232,10 @@ services:
           property: host
 
   # ---------------------------------------------------------------------------
-  # Redis
+  # Redis - Use the existing instance (do not create new)
   # ---------------------------------------------------------------------------
   - type: redis
-    name: estore-cache
+    name: estore-redis
     region: oregon
     plan: free
     maxmemoryPolicy: allkeys-lru
