@@ -60,13 +60,11 @@ FROM base AS production
 ENV NODE_ENV=production
 
 # Copy entire app from builder
-COPY --from=builder /app /app
+# Copy entire app from builder with correct ownership
+COPY --from=builder --chown=nodejs:nodejs /app /app
 
 # Set working directory
 WORKDIR /app/services/product-service
-
-# Set ownership
-RUN chown -R nodejs:nodejs /app
 
 # Switch to non-root user
 USER nodejs
