@@ -1,9 +1,14 @@
+# =============================================================================
+# Render Blueprint - E-Store Microservices Deployment (Docker)
+# https://render.com/docs/blueprint-spec
+# =============================================================================
+
 services:
   # ---------------------------------------------------------------------------
   # API Gateway
   # ---------------------------------------------------------------------------
   - type: web
-    name: estore-api-gateway
+    name: estore-gateway
     runtime: docker
     region: oregon
     plan: free
@@ -18,36 +23,36 @@ services:
       - key: USER_SERVICE_URL
         fromService:
           type: web
-          name: estore-user-service
+          name: estore-users
           property: hostport
       - key: PRODUCT_SERVICE_URL
         fromService:
           type: web
-          name: estore-product-service
+          name: estore-products
           property: hostport
       - key: CART_SERVICE_URL
         fromService:
           type: web
-          name: estore-cart-service
+          name: estore-carts
           property: hostport
       - key: ORDER_SERVICE_URL
         fromService:
           type: web
-          name: estore-order-service
+          name: estore-orders
           property: hostport
       - key: JWT_SECRET
         generateValue: true
       - key: REDIS_URL
         fromService:
           type: redis
-          name: estore-redis
+          name: estore-cache
           property: connectionString
 
   # ---------------------------------------------------------------------------
   # User Service
   # ---------------------------------------------------------------------------
   - type: web
-    name: estore-user-service
+    name: estore-users
     runtime: docker
     region: oregon
     plan: free
@@ -64,7 +69,7 @@ services:
       - key: JWT_SECRET
         fromService:
           type: web
-          name: estore-api-gateway
+          name: estore-gateway
           envVarKey: JWT_SECRET
       - key: JWT_REFRESH_SECRET
         generateValue: true
@@ -87,7 +92,7 @@ services:
   # Product Service
   # ---------------------------------------------------------------------------
   - type: web
-    name: estore-product-service
+    name: estore-products
     runtime: docker
     region: oregon
     plan: free
@@ -104,12 +109,12 @@ services:
       - key: JWT_SECRET
         fromService:
           type: web
-          name: estore-api-gateway
+          name: estore-gateway
           envVarKey: JWT_SECRET
       - key: REDIS_URL
         fromService:
           type: redis
-          name: estore-redis
+          name: estore-cache
           property: connectionString
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
@@ -122,7 +127,7 @@ services:
   # Cart Service
   # ---------------------------------------------------------------------------
   - type: web
-    name: estore-cart-service
+    name: estore-carts
     runtime: docker
     region: oregon
     plan: free
@@ -139,24 +144,24 @@ services:
       - key: JWT_SECRET
         fromService:
           type: web
-          name: estore-api-gateway
+          name: estore-gateway
           envVarKey: JWT_SECRET
       - key: REDIS_URL
         fromService:
           type: redis
-          name: estore-redis
+          name: estore-cache
           property: connectionString
       - key: PRODUCT_SERVICE_URL
         fromService:
           type: web
-          name: estore-product-service
+          name: estore-products
           property: hostport
 
   # ---------------------------------------------------------------------------
   # Order Service
   # ---------------------------------------------------------------------------
   - type: web
-    name: estore-order-service
+    name: estore-orders
     runtime: docker
     region: oregon
     plan: free
@@ -173,22 +178,22 @@ services:
       - key: JWT_SECRET
         fromService:
           type: web
-          name: estore-api-gateway
+          name: estore-gateway
           envVarKey: JWT_SECRET
       - key: USER_SERVICE_URL
         fromService:
           type: web
-          name: estore-user-service
+          name: estore-users
           property: hostport
       - key: PRODUCT_SERVICE_URL
         fromService:
           type: web
-          name: estore-product-service
+          name: estore-products
           property: hostport
       - key: CART_SERVICE_URL
         fromService:
           type: web
-          name: estore-cart-service
+          name: estore-carts
           property: hostport
       - key: STRIPE_SECRET_KEY
         sync: false
@@ -207,8 +212,10 @@ services:
   # Frontend
   # ---------------------------------------------------------------------------
   - type: web
-    name: estore-frontend-docker
+    name: estore-web
     runtime: docker
+    region: oregon
+    plan: free
     rootDir: frontend
     dockerfilePath: ./Dockerfile
     healthCheckPath: /
@@ -216,19 +223,19 @@ services:
       - key: VITE_API_URL
         fromService:
           type: web
-          name: estore-api-gateway
+          name: estore-gateway
           property: host
       - key: VITE_SOCKET_URL
         fromService:
           type: web
-          name: estore-api-gateway
+          name: estore-gateway
           property: host
 
   # ---------------------------------------------------------------------------
   # Redis
   # ---------------------------------------------------------------------------
   - type: redis
-    name: estore-redis
+    name: estore-cache
     region: oregon
     plan: free
     maxmemoryPolicy: allkeys-lru
