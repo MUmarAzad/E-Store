@@ -40,6 +40,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id']
 }));
 
+// Health check (no rate limit)
+app.use(healthRoutes);
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
@@ -102,7 +105,7 @@ app.use((req, res, next) => {
 // =============================================================================
 
 // Health check (no proxy)
-app.use(healthRoutes);
+
 
 // Proxy routes to microservices
 app.use('/api', proxyRoutes);

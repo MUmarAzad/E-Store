@@ -43,6 +43,16 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
+// Health check - BEFORE rate limiting
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'User Service is healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -81,15 +91,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'User Service is healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
-});
+
 
 // API routes
 app.use('/api/auth', authLimiter, authRoutes);
