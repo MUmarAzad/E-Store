@@ -207,7 +207,7 @@ services:
   # Frontend
   # ---------------------------------------------------------------------------
   - type: web
-    name: estore-frontend
+    name: estore-frontend-docker
     runtime: docker
     rootDir: frontend
     dockerfilePath: ./Dockerfile
