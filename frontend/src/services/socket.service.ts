@@ -4,7 +4,7 @@ import { setCart } from '@/store/slices/cartSlice';
 import { addNotification } from '@/store/slices/uiSlice';
 import { CartUpdatedEvent, CartPriceChangedEvent, CartStockWarningEvent } from '@/types';
 
-const SOCKET_URL = (import.meta as any).env?.VITE_SOCKET_URL || 'http://localhost:4000';
+const SOCKET_URL = (import.meta as any).env?.VITE_SOCKET_URL || 'https://estore-gateway.onrender.com';
 
 class SocketService {
   private socket: Socket | null = null;
