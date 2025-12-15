@@ -214,9 +214,9 @@ services:
         sync: false
 
   # ---------------------------------------------------------------------------
-  # Frontend (Static Site)
+  # Frontend (Static Site) - Deploy as Web Service with Static Runtime
   # ---------------------------------------------------------------------------
-  - type: static
+  - type: web
     name: estore-frontend
     runtime: static
     plan: free
