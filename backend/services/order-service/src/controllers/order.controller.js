@@ -286,10 +286,17 @@ const getAllOrders = asyncHandler(async (req, res) => {
     sortOrder = 'desc'
   } = req.query;
 
+  console.log('[getAllOrders] Query params:', req.query);
+  console.log('[getAllOrders] Status:', status, 'Type:', typeof status);
+
   const query = {};
 
-  if (status) {
+  // Only filter by status if it's provided and not empty
+  if (status && status.trim() !== '') {
     query.status = status;
+    console.log('[getAllOrders] Filtering by status:', status);
+  } else {
+    console.log('[getAllOrders] No status filter applied');
   }
 
   if (startDate || endDate) {
@@ -298,17 +305,20 @@ const getAllOrders = asyncHandler(async (req, res) => {
     if (endDate) query.createdAt.$lte = new Date(endDate);
   }
 
+  console.log('[getAllOrders] Final query:', query);
+
   const sortOptions = {};
   sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
   const orders = await Order.find(query)
-    .populate('user', 'firstName lastName email')
     .sort(sortOptions)
     .skip((page - 1) * limit)
     .limit(parseInt(limit))
     .lean();
 
   const total = await Order.countDocuments(query);
+
+  console.log('[getAllOrders] Found', orders.length, 'orders out of', total);
 
   return paginated(res, {
     data: orders,

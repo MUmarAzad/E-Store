@@ -35,7 +35,7 @@ export const orderService = {
 
   // Cancel Order
   async cancelOrder(id: string): Promise<Order> {
-    const response = await api.put<{ success: boolean; data: Order }>(`/orders/${id}/cancel`);
+    const response = await api.patch<{ success: boolean; data: Order }>(`/orders/${id}/cancel`);
     return response.data.data;
   },
 
@@ -47,7 +47,7 @@ export const orderService = {
 
   // Update Order Status (Admin)
   async updateOrderStatus(id: string, status: OrderStatus, note?: string): Promise<Order> {
-    const response = await api.put<{ success: boolean; data: Order }>(
+    const response = await api.patch<{ success: boolean; data: Order }>(
       `/admin/orders/${id}/status`,
       { status, note }
     );

@@ -223,6 +223,10 @@ productSchema.virtual('primaryImage').get(function() {
   return primary ? primary.url : (this.images[0]?.url || null);
 });
 
+productSchema.virtual('sku').get(function() {
+  return this.inventory?.sku || null;
+});
+
 // Indexes
 productSchema.index({ slug: 1 }, { unique: true });
 productSchema.index({ category: 1 });

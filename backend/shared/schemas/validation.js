@@ -165,6 +165,16 @@ const productSchema = z.object({
   category: objectId,
   subcategory: z.string().max(100).optional(),
   brand: z.string().max(100).optional(),
+  images: z
+    .array(
+      z.object({
+        url: z.string().url('Invalid image URL'),
+        alt: z.string().max(200).optional(),
+        isPrimary: z.boolean().optional(),
+        order: z.number().int().min(0).optional(),
+      })
+    )
+    .optional(),
   inventory: z
     .object({
       quantity: z.number().int().min(0).default(0),
@@ -338,6 +348,7 @@ const orderStatusUpdateSchema = z.object({
   ]),
   note: z.string().max(500).optional(),
   trackingNumber: z.string().max(100).optional(),
+  carrier: z.string().max(100).optional(),
 });
 
 /**

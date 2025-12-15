@@ -118,6 +118,49 @@ router.use('/categories', createProxyMiddleware(
   })
 ));
 
+// Upload routes (Product service handles uploads)
+router.use('/upload', createProxyMiddleware({
+  target: PRODUCT_SERVICE_URL,
+  changeOrigin: true,
+  pathRewrite: {
+    '^/upload': '/api/upload'
+  },
+  timeout: 60000, // Longer timeout for uploads
+  proxyTimeout: 60000,
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`[PROXY] Upload ${req.method} ${req.originalUrl} -> ${PRODUCT_SERVICE_URL}/api/upload`);
+    
+    // Forward request ID
+    if (req.id) {
+      proxyReq.setHeader('x-request-id', req.id);
+    }
+    
+    // Forward authorization header
+    if (req.headers.authorization) {
+      proxyReq.setHeader('authorization', req.headers.authorization);
+    }
+    
+    // Forward original IP
+    proxyReq.setHeader('x-forwarded-for', req.ip);
+    
+    // Don't modify the body for multipart uploads - let it stream through
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    console.log(`[PROXY] Upload Response ${proxyRes.statusCode}`);
+    proxyRes.headers['x-served-by'] = 'api-gateway';
+  },
+  onError: (err, req, res) => {
+    console.error(`[PROXY] Upload ERROR:`, err.message);
+    if (!res.headersSent) {
+      res.status(502).json({
+        success: false,
+        message: 'Upload service temporarily unavailable',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
+    }
+  }
+}));
+
 // =============================================================================
 // CART SERVICE ROUTES
 // =============================================================================
@@ -187,11 +230,64 @@ router.use('/admin/products', createProxyMiddleware(
   })
 ));
 
-// Admin order routes
-router.use('/admin/orders', createProxyMiddleware(
-  createProxyOptions(ORDER_SERVICE_URL, {
-    '^/admin/orders': '/api/orders'
-  })
-));
+// Admin order routes - use custom pathRewrite function for dynamic routes
+// Updated: 2025-12-14 15:20
+router.use('/admin/orders', createProxyMiddleware({
+  target: ORDER_SERVICE_URL,
+  changeOrigin: true,
+  pathRewrite: (path, req) => {
+    // req.originalUrl = /api/admin/orders?... (full URL from gateway mount point)
+    // req.baseUrl = /api/admin/orders
+    // path = the path portion after mount point (could be empty, /, or /something)
+    const fullPath = req.originalUrl || '';
+    console.log('[PROXY] Admin orders - originalUrl:', fullPath, 'path:', path, 'method:', req.method);
+    
+    // Handle status update: /api/admin/orders/:id/status -> /api/orders/:id/status
+    const statusMatch = fullPath.match(/\/api\/admin\/orders\/([^/?]+)\/status/);
+    if (statusMatch) {
+      const newPath = `/api/orders/${statusMatch[1]}/status`;
+      console.log('[PROXY] Rewriting status update to:', newPath);
+      return newPath;
+    }
+    
+    // Handle get all orders: /api/admin/orders or /api/admin/orders?... -> /api/orders/admin/all
+    if (fullPath.match(/\/api\/admin\/orders(\?|$)/)) {
+      const queryString = fullPath.includes('?') ? fullPath.substring(fullPath.indexOf('?')) : '';
+      const newPath = `/api/orders/admin/all${queryString}`;
+      console.log('[PROXY] Rewriting list to:', newPath);
+      return newPath;
+    }
+    
+    // Default: pass through to order service (for other admin order routes)
+    const newPath = fullPath.replace('/api/admin/orders', '/api/orders');
+    console.log('[PROXY] Default rewriting to:', newPath);
+    return newPath;
+  },
+  onProxyReq: (proxyReq, req, res) => {
+    if (req.id) proxyReq.setHeader('x-request-id', req.id);
+    if (req.headers.authorization) proxyReq.setHeader('authorization', req.headers.authorization);
+    proxyReq.setHeader('x-forwarded-for', req.ip);
+    
+    // Fix for body forwarding
+    if (req.body && Object.keys(req.body).length > 0) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    proxyRes.headers['x-served-by'] = 'api-gateway';
+  },
+  onError: (err, req, res) => {
+    console.error(`[PROXY] Admin Orders ERROR:`, err.message);
+    if (!res.headersSent) {
+      res.status(502).json({
+        success: false,
+        message: 'Order service temporarily unavailable'
+      });
+    }
+  }
+}));
 
 module.exports = router;

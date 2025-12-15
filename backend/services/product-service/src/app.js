@@ -15,6 +15,7 @@ const { createLogger } = require('../../../shared/utils/logger');
 // Import routes
 const productRoutes = require('./routes/product.routes');
 const categoryRoutes = require('./routes/category.routes');
+const uploadRoutes = require('./routes/upload.routes');
 
 const app = express();
 const logger = createLogger('product-service');
@@ -73,6 +74,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // 404 handler
 app.use((req, res) => {

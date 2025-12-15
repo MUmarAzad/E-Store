@@ -234,6 +234,14 @@ const createProduct = asyncHandler(async (req, res) => {
     productData.slug = slugify(productData.name);
   }
 
+  // Handle top-level SKU by moving to inventory.sku
+  if (productData.sku && productData.inventory) {
+    productData.inventory.sku = productData.sku;
+  } else if (productData.sku && !productData.inventory) {
+    productData.inventory = { sku: productData.sku };
+  }
+  delete productData.sku; // Remove top-level sku as it's a virtual
+
   // Check if slug already exists
   const existingProduct = await Product.findOne({ slug: productData.slug });
   if (existingProduct) {
@@ -265,6 +273,14 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (updates.name && !updates.slug) {
     updates.slug = slugify(updates.name);
   }
+
+  // Handle top-level SKU by moving to inventory.sku
+  if (updates.sku && updates.inventory) {
+    updates.inventory.sku = updates.sku;
+  } else if (updates.sku && !updates.inventory) {
+    updates.inventory = { sku: updates.sku };
+  }
+  delete updates.sku; // Remove top-level sku as it's a virtual
 
   // Verify category exists if updating
   if (updates.category) {

@@ -88,7 +88,7 @@ const OrdersPage: React.FC = () => {
               <div className="flex items-center gap-4">
                 <div className="text-right">
                   <p className="text-lg font-bold text-gray-900">
-                    {formatCurrency(order.total)}
+                    {formatCurrency(order.pricing?.total || 0)}
                   </p>
                 </div>
                 <Link

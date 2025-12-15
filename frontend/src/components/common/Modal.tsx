@@ -47,14 +47,14 @@ const Modal: React.FC<ModalProps> = ({
         {/* Modal Content */}
         <div
           className={cn(
-            'bg-white rounded-xl shadow-xl w-full animate-slide-up',
+            'bg-white rounded-xl shadow-xl w-full animate-slide-up max-h-[90vh] flex flex-col',
             sizes[size]
           )}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className="flex items-center justify-between px-6 py-4 border-b">
+            <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0">
               {title && <h3 className="text-lg font-semibold text-gray-900">{title}</h3>}
               {showCloseButton && (
                 <button
@@ -68,7 +68,7 @@ const Modal: React.FC<ModalProps> = ({
           )}
 
           {/* Body */}
-          <div className="px-6 py-4">{children}</div>
+          <div className="px-6 py-4 overflow-y-auto flex-1">{children}</div>
         </div>
       </div>
     </Fragment>

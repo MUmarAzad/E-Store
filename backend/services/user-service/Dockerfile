@@ -42,17 +42,16 @@ CMD ["dumb-init", "npm", "run", "dev"]
 # Production build stage
 FROM base AS builder
 
-# Set working directory to service directory
-WORKDIR /app/services/user-service
-
-# Copy service package files
-COPY services/user-service/package*.json ./
-
-# Install all dependencies for building
-RUN npm install
-
 # Copy entire backend directory
 COPY . /app
+
+# Install root dependencies
+WORKDIR /app
+RUN npm install --production
+
+# Install service dependencies
+WORKDIR /app/services/user-service
+RUN npm install --production
 
 # Production stage
 FROM base AS production
@@ -60,14 +59,11 @@ FROM base AS production
 # Set node environment
 ENV NODE_ENV=production
 
-# Copy package files
-COPY package*.json ./
+# Copy entire app from builder
+COPY --from=builder /app /app
 
-# Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
-
-# Copy built application from builder
-COPY --from=builder /app/src ./src
+# Set working directory
+WORKDIR /app/services/user-service
 
 # Set ownership
 RUN chown -R nodejs:nodejs /app
