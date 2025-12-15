@@ -1,20 +1,14 @@
-# =============================================================================
-# Render Blueprint - E-Store Microservices Deployment
-# https://render.com/docs/blueprint-spec
-# =============================================================================
-
 services:
   # ---------------------------------------------------------------------------
   # API Gateway
   # ---------------------------------------------------------------------------
   - type: web
     name: estore-api-gateway
-    runtime: node
+    runtime: docker
     region: oregon
     plan: free
     rootDir: backend
-    buildCommand: cd api-gateway && npm install
-    startCommand: cd api-gateway && npm start
+    dockerfilePath: ./api-gateway/Dockerfile
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -54,12 +48,11 @@ services:
   # ---------------------------------------------------------------------------
   - type: web
     name: estore-user-service
-    runtime: node
+    runtime: docker
     region: oregon
     plan: free
     rootDir: backend
-    buildCommand: cd services/user-service && npm install
-    startCommand: cd services/user-service && npm start
+    dockerfilePath: ./services/user-service/Dockerfile
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -67,7 +60,7 @@ services:
       - key: PORT
         value: 3000
       - key: MONGODB_URI
-        sync: false  # Set manually in Render dashboard
+        sync: false
       - key: JWT_SECRET
         fromService:
           type: web
@@ -95,12 +88,11 @@ services:
   # ---------------------------------------------------------------------------
   - type: web
     name: estore-product-service
-    runtime: node
+    runtime: docker
     region: oregon
     plan: free
     rootDir: backend
-    buildCommand: cd services/product-service && npm install
-    startCommand: cd services/product-service && npm start
+    dockerfilePath: ./services/product-service/Dockerfile
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -131,12 +123,11 @@ services:
   # ---------------------------------------------------------------------------
   - type: web
     name: estore-cart-service
-    runtime: node
+    runtime: docker
     region: oregon
     plan: free
     rootDir: backend
-    buildCommand: cd services/cart-service && npm install
-    startCommand: cd services/cart-service && npm start
+    dockerfilePath: ./services/cart-service/Dockerfile
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -166,12 +157,11 @@ services:
   # ---------------------------------------------------------------------------
   - type: web
     name: estore-order-service
-    runtime: node
+    runtime: docker
     region: oregon
     plan: free
     rootDir: backend
-    buildCommand: cd services/order-service && npm install
-    startCommand: cd services/order-service && npm start
+    dockerfilePath: ./services/order-service/Dockerfile
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -214,22 +204,14 @@ services:
         sync: false
 
   # ---------------------------------------------------------------------------
-  # Frontend (Static Site) - Deploy as Web Service with Static Runtime
+  # Frontend
   # ---------------------------------------------------------------------------
   - type: web
     name: estore-frontend
-    runtime: static
+    runtime: docker
     rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    headers:
-      - path: /*
-        name: X-Frame-Options
-        value: SAMEORIGIN
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
     envVars:
       - key: VITE_API_URL
         fromService:
