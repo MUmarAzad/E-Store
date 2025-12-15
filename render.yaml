@@ -13,7 +13,7 @@ services:
     region: oregon
     plan: free
     rootDir: backend
-    buildCommand: npm install && cd api-gateway && npm install
+    buildCommand: cd api-gateway && npm install
     startCommand: cd api-gateway && npm start
     healthCheckPath: /health
     envVars:
@@ -58,7 +58,7 @@ services:
     region: oregon
     plan: free
     rootDir: backend
-    buildCommand: npm install && cd services/user-service && npm install
+    buildCommand: cd services/user-service && npm install
     startCommand: cd services/user-service && npm start
     healthCheckPath: /health
     envVars:
@@ -99,7 +99,7 @@ services:
     region: oregon
     plan: free
     rootDir: backend
-    buildCommand: npm install && cd services/product-service && npm install
+    buildCommand: cd services/product-service && npm install
     startCommand: cd services/product-service && npm start
     healthCheckPath: /health
     envVars:
@@ -135,7 +135,7 @@ services:
     region: oregon
     plan: free
     rootDir: backend
-    buildCommand: npm install && cd services/cart-service && npm install
+    buildCommand: cd services/cart-service && npm install
     startCommand: cd services/cart-service && npm start
     healthCheckPath: /health
     envVars:
@@ -170,7 +170,7 @@ services:
     region: oregon
     plan: free
     rootDir: backend
-    buildCommand: npm install && cd services/order-service && npm install
+    buildCommand: cd services/order-service && npm install
     startCommand: cd services/order-service && npm start
     healthCheckPath: /health
     envVars:
