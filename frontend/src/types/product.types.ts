@@ -41,6 +41,8 @@ export interface Product {
   images: ProductImage[];
   inventory: ProductInventory;
   stock: number;
+  inStock?: boolean;
+  primaryImage?: string | null;
   attributes: ProductAttribute[];
   tags: string[];
   status: ProductStatus;

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Star, Eye, Check } from 'lucide-react';
+import { ShoppingCart, Star, Eye, Check, Plus, Minus } from 'lucide-react';
 // import { Heart } from 'lucide-react'; // TODO: Uncomment when wishlist feature is implemented
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import { addToCart } from '@/store/slices/cartSlice';
@@ -23,15 +23,29 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const dispatch = useAppDispatch();
   const { isSyncing, cart } = useAppSelector((state) => state.cart);
   const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const [quantity, setQuantity] = useState(1);
 
   // Check if product is already in cart
   const isInCart = cart?.items?.some(item => item.productId === product._id) ?? false;
 
+  // Handle both stock and inventory.quantity
+  const productStock = product.stock ?? product.inventory?.quantity ?? 0;
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (isAuthenticated && !isInCart) {
-      dispatch(addToCart({ productId: product._id, quantity: 1 }));
+    if (isAuthenticated && !isInCart && productStock > 0) {
+      dispatch(addToCart({ productId: product._id, quantity }));
+      setQuantity(1); // Reset quantity after adding
+    }
+  };
+
+  const handleQuantityChange = (delta: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const newQuantity = quantity + delta;
+    if (newQuantity >= 1 && newQuantity <= productStock) {
+      setQuantity(newQuantity);
     }
   };
 
@@ -45,10 +59,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
     ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
     : 0;
 
-  const mainImage = product.images?.[0]?.url || '/placeholder-product.png';
+  // Handle both string and object image formats
+  const firstImage = product.images?.[0];
+  const mainImage = typeof firstImage === 'string'
+    ? firstImage
+    : (firstImage?.url || product.primaryImage || '/placeholder-product.png');
 
   return (
-    <div className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+    <div className="group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col">
       {/* Image Container */}
       <Link to={`${ROUTES.PRODUCTS}/${product.slug}`} className="block relative">
         <div className="aspect-square overflow-hidden bg-gray-100">
@@ -61,7 +79,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {product.stock === 0 && (
+          {productStock === 0 && (
             <Badge variant="error">Out of Stock</Badge>
           )}
           {discountPercentage > 0 && (
@@ -92,35 +110,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </button>
           )}
         </div>
-
-        {/* Add to Cart Button (on hover) */}
-        {product.stock > 0 && isAuthenticated && (
-          <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-            <Button
-              variant={isInCart ? "secondary" : "primary"}
-              fullWidth
-              size="sm"
-              onClick={handleAddToCart}
-              disabled={isSyncing || isInCart}
-            >
-              {isInCart ? (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Added to Cart
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Add to Cart
-                </>
-              )}
-            </Button>
-          </div>
-        )}
       </Link>
 
       {/* Product Info */}
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-grow">
         {/* Category */}
         {product.category && typeof product.category !== 'string' && (
           <Link
@@ -133,7 +126,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Name */}
         <Link to={`${ROUTES.PRODUCTS}/${product.slug}`}>
-          <h3 className="font-semibold text-gray-900 mt-1 hover:text-primary-600 transition-colors">
+          <h3 className="font-semibold text-gray-900 mt-1 hover:text-primary-600 transition-colors line-clamp-2">
             {truncateText(product.name, 50)}
           </h3>
         </Link>
@@ -171,10 +164,77 @@ const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Stock Status */}
-        {product.stock > 0 && product.stock <= 5 && (
+        {productStock > 0 && productStock <= 5 && (
           <p className="text-sm text-orange-600 mt-2">
-            Only {product.stock} left in stock
+            Only {productStock} left in stock
           </p>
+        )}
+
+        {/* Spacer to push add to cart to bottom */}
+        <div className="flex-grow min-h-2" />
+
+        {/* Quantity Selector & Add to Cart */}
+        {isAuthenticated && productStock > 0 && (
+          <div className="mt-4 space-y-2">
+            {!isInCart && (
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={(e) => handleQuantityChange(-1, e)}
+                  disabled={quantity <= 1}
+                  className="p-1.5 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Minus className="h-3 w-3" />
+                </button>
+                <span className="w-8 text-center font-medium text-sm">{quantity}</span>
+                <button
+                  onClick={(e) => handleQuantityChange(1, e)}
+                  disabled={quantity >= productStock}
+                  className="p-1.5 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+            <Button
+              variant={isInCart ? "secondary" : "primary"}
+              fullWidth
+              size="sm"
+              onClick={handleAddToCart}
+              disabled={isSyncing || isInCart}
+            >
+              {isInCart ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Added to Cart
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Add to Cart
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Out of stock message */}
+        {productStock === 0 && (
+          <div className="mt-4">
+            <Button variant="outline" fullWidth size="sm" disabled>
+              Out of Stock
+            </Button>
+          </div>
+        )}
+
+        {/* Login to add to cart */}
+        {!isAuthenticated && productStock > 0 && (
+          <div className="mt-4">
+            <Link to={ROUTES.LOGIN}>
+              <Button variant="outline" fullWidth size="sm">
+                Login to Add to Cart
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
     </div>

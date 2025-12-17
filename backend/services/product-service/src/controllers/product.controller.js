@@ -22,6 +22,28 @@ const {
 const { slugify } = require('../../../../shared/utils/helpers');
 
 // =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Transform product to include virtual fields that may be lost with .lean()
+ */
+const transformProduct = (product) => {
+  if (!product) return null;
+  return {
+    ...product,
+    stock: product.stock ?? product.inventory?.quantity ?? 0,
+    inStock: product.inStock ?? (product.inventory?.quantity > 0) ?? false,
+    primaryImage: product.primaryImage ?? product.images?.[0]?.url ?? null,
+  };
+};
+
+/**
+ * Transform array of products with virtual fields
+ */
+const transformProducts = (products) => products.map(transformProduct);
+
+// =============================================================================
 // PUBLIC CONTROLLERS
 // =============================================================================
 
@@ -88,11 +110,11 @@ const getProducts = asyncHandler(async (req, res) => {
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      .lean(),
+      .lean({ virtuals: true }),
     Product.countDocuments(filter),
   ]);
 
-  return paginated(res, { data: products, page, limit, total });
+  return paginated(res, { data: transformProducts(products), page, limit, total });
 });
 
 /**
@@ -120,11 +142,11 @@ const searchProducts = asyncHandler(async (req, res) => {
       .sort({ score: { $meta: 'textScore' } })
       .skip(skip)
       .limit(parseInt(limit))
-      .lean(),
+      .lean({ virtuals: true }),
     Product.countDocuments(filter),
   ]);
 
-  return paginated(res, { data: products, page: parseInt(page), limit: parseInt(limit), total });
+  return paginated(res, { data: transformProducts(products), page: parseInt(page), limit: parseInt(limit), total });
 });
 
 /**
@@ -142,9 +164,9 @@ const getFeaturedProducts = asyncHandler(async (req, res) => {
     .populate('category', 'name slug')
     .sort({ createdAt: -1 })
     .limit(limit)
-    .lean();
+    .lean({ virtuals: true });
 
-  return success(res, { products });
+  return success(res, { products: transformProducts(products) });
 });
 
 /**
@@ -213,11 +235,11 @@ const getProductsByCategory = asyncHandler(async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean(),
+      .lean({ virtuals: true }),
     Product.countDocuments(filter),
   ]);
 
-  return paginated(res, { data: products, page, limit, total });
+  return paginated(res, { data: transformProducts(products), page, limit, total });
 });
 
 // =============================================================================
@@ -542,9 +564,9 @@ const getLowStockProducts = asyncHandler(async (req, res) => {
   .select('name slug inventory images')
   .sort({ 'inventory.quantity': 1 })
   .limit(parseInt(limit))
-  .lean();
+  .lean({ virtuals: true });
 
-  return success(res, { products: lowStockProducts });
+  return success(res, { products: transformProducts(lowStockProducts) });
 });
 
 module.exports = {

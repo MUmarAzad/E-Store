@@ -184,15 +184,14 @@ const OrderDetailPage: React.FC = () => {
               <React.Fragment key={status}>
                 <div className="flex flex-col items-center">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      order.status === status
-                        ? 'bg-primary-100'
-                        : ['pending', 'processing', 'shipped', 'delivered'].indexOf(
-                            order.status
-                          ) >= index
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${order.status === status
+                      ? 'bg-primary-100'
+                      : ['pending', 'processing', 'shipped', 'delivered'].indexOf(
+                        order.status
+                      ) >= index
                         ? 'bg-green-100'
                         : 'bg-gray-100'
-                    }`}
+                      }`}
                   >
                     {getStatusIcon(
                       ['pending', 'processing', 'shipped', 'delivered'].indexOf(
@@ -206,13 +205,12 @@ const OrderDetailPage: React.FC = () => {
                 </div>
                 {index < 3 && (
                   <div
-                    className={`flex-1 h-1 mx-2 ${
-                      ['pending', 'processing', 'shipped', 'delivered'].indexOf(
-                        order.status
-                      ) > index
-                        ? 'bg-green-500'
-                        : 'bg-gray-200'
-                    }`}
+                    className={`flex-1 h-1 mx-2 ${['pending', 'processing', 'shipped', 'delivered'].indexOf(
+                      order.status
+                    ) > index
+                      ? 'bg-green-500'
+                      : 'bg-gray-200'
+                      }`}
                   />
                 )}
               </React.Fragment>
@@ -234,7 +232,7 @@ const OrderDetailPage: React.FC = () => {
                   <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                     {item.image ? (
                       <img
-                        src={item.image}
+                        src={typeof item.image === 'string' ? item.image : item.image.url}
                         alt={item.name}
                         className="w-full h-full object-cover"
                       />
@@ -311,6 +309,10 @@ const OrderDetailPage: React.FC = () => {
                     ? formatCurrency(order.pricing?.shipping || 0)
                     : 'Free'}
                 </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tax</span>
+                <span>{formatCurrency(order.pricing?.tax || 0)}</span>
               </div>
               {(order.pricing?.discount || 0) > 0 && (
                 <div className="flex justify-between text-green-600">

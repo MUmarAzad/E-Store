@@ -81,7 +81,7 @@ const createOrder = asyncHandler(async (req, res) => {
       quantity: item.quantity,
       price: item.price,
       subtotal: item.subtotal || (item.price * item.quantity),
-      image: item.product?.images?.[0] || item.image,
+      image: item.product?.images?.[0]?.url || item.product?.primaryImage || item.image || '',
       variant: item.variant || {}
     })),
     shippingAddress,

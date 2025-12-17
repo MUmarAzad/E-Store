@@ -8,12 +8,14 @@ interface OrderSummaryProps {
   showItems?: boolean;
   shipping?: number;
   discount?: number;
+  tax?: number;
 }
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({
   showItems = true,
   shipping = 0,
   discount = 0,
+  tax,
 }) => {
   const { cart, isLoading } = useAppSelector((state) => state.cart);
 
@@ -51,7 +53,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
   }
 
   const subtotal = cart.subtotal;
-  const total = subtotal + shipping - discount;
+  // Calculate tax: default 8% if not provided (matches backend)
+  const taxAmount = tax !== undefined ? tax : subtotal * 0.08;
+  const total = subtotal + shipping + taxAmount - discount;
 
   return (
     <div className="bg-gray-50 rounded-xl p-6 space-y-6">
@@ -68,7 +72,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
               <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                 {item.product?.images?.[0] ? (
                   <img
-                    src={item.product.images[0].url}
+                    src={typeof item.product.images[0] === 'string'
+                      ? item.product.images[0]
+                      : item.product.images[0].url}
                     alt={item.product.name}
                     className="w-full h-full object-cover"
                   />
@@ -116,6 +122,11 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
             <span>-{formatCurrency(discount)}</span>
           </div>
         )}
+
+        <div className="flex justify-between text-gray-600">
+          <span>Tax (8%)</span>
+          <span>{formatCurrency(taxAmount)}</span>
+        </div>
 
         <div className="flex justify-between text-lg font-semibold pt-2 border-t">
           <span>Total</span>
