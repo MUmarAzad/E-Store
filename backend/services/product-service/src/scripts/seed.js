@@ -11,14 +11,46 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 
 const categoriesData = [
-  { name: 'Electronics', icon: 'monitor' },
-  { name: 'Clothing', icon: 'shopping-bag' },
-  { name: 'Home & Garden', icon: 'home' },
-  { name: 'Books', icon: 'book' },
-  { name: 'Sports', icon: 'activity' },
-  { name: 'Toys', icon: 'smile' },
-  { name: 'Beauty', icon: 'heart' },
-  { name: 'Automotive', icon: 'truck' }
+  { 
+    name: 'Electronics', 
+    icon: 'monitor',
+    image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=800&h=600&fit=crop'
+  },
+  { 
+    name: 'Clothing', 
+    icon: 'shopping-bag',
+    image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&h=600&fit=crop'
+  },
+  { 
+    name: 'Home & Garden', 
+    icon: 'home',
+    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop'
+  },
+  { 
+    name: 'Books', 
+    icon: 'book',
+    image: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=800&h=600&fit=crop'
+  },
+  { 
+    name: 'Sports', 
+    icon: 'activity',
+    image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&h=600&fit=crop'
+  },
+  { 
+    name: 'Toys', 
+    icon: 'smile',
+    image: 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=800&h=600&fit=crop'
+  },
+  { 
+    name: 'Beauty', 
+    icon: 'heart',
+    image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800&h=600&fit=crop'
+  },
+  { 
+    name: 'Automotive', 
+    icon: 'truck',
+    image: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop'
+  }
 ];
 
 const adjectives = ['Premium', 'Deluxe', 'Standard', 'Basic', 'Ultimate', 'Pro', 'Smart', 'Eco-friendly', 'Compact', 'Heavy-duty', 'Modern', 'Vintage', 'Sleek', 'Robust'];
