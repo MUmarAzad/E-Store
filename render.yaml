@@ -21,25 +21,13 @@ services:
       - key: PORT
         value: 4000
       - key: USER_SERVICE_URL
-        fromService:
-          type: web
-          name: estore-users
-          property: hostport
+        value: https://estore-users.onrender.com
       - key: PRODUCT_SERVICE_URL
-        fromService:
-          type: web
-          name: estore-products
-          property: hostport
+        value: https://estore-products.onrender.com
       - key: CART_SERVICE_URL
-        fromService:
-          type: web
-          name: estore-carts
-          property: hostport
+        value: https://estore-carts.onrender.com
       - key: ORDER_SERVICE_URL
-        fromService:
-          type: web
-          name: estore-orders
-          property: hostport
+        value: https://estore-orders.onrender.com
       - key: JWT_SECRET
         generateValue: true
       - key: REDIS_URL
@@ -47,6 +35,8 @@ services:
           type: redis
           name: estore-redis
           property: connectionString
+      - key: CORS_ORIGIN
+        value: https://estore-web.onrender.com
 
   # ---------------------------------------------------------------------------
   # User Service
@@ -87,6 +77,8 @@ services:
         sync: false
       - key: EMAIL_FROM
         sync: false
+      - key: FRONTEND_URL
+        value: https://estore-web.onrender.com
 
   # ---------------------------------------------------------------------------
   # Product Service
@@ -152,10 +144,9 @@ services:
           name: estore-redis
           property: connectionString
       - key: PRODUCT_SERVICE_URL
-        fromService:
-          type: web
-          name: estore-products
-          property: hostport
+        value: https://estore-products.onrender.com
+      - key: FRONTEND_URL
+        value: https://estore-web.onrender.com
 
   # ---------------------------------------------------------------------------
   # Order Service
@@ -181,20 +172,11 @@ services:
           name: estore-gateway
           envVarKey: JWT_SECRET
       - key: USER_SERVICE_URL
-        fromService:
-          type: web
-          name: estore-users
-          property: hostport
+        value: https://estore-users.onrender.com
       - key: PRODUCT_SERVICE_URL
-        fromService:
-          type: web
-          name: estore-products
-          property: hostport
+        value: https://estore-products.onrender.com
       - key: CART_SERVICE_URL
-        fromService:
-          type: web
-          name: estore-carts
-          property: hostport
+        value: https://estore-carts.onrender.com
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: SMTP_HOST
@@ -207,6 +189,8 @@ services:
         sync: false
       - key: EMAIL_FROM
         sync: false
+      - key: FRONTEND_URL
+        value: https://estore-web.onrender.com
 
   # ---------------------------------------------------------------------------
   # Frontend
@@ -221,15 +205,9 @@ services:
     healthCheckPath: /
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: estore-gateway
-          property: host
+        value: https://estore-gateway.onrender.com/api
       - key: VITE_SOCKET_URL
-        fromService:
-          type: web
-          name: estore-gateway
-          property: host
+        value: https://estore-gateway.onrender.com
 
   # ---------------------------------------------------------------------------
   # Redis - Use the existing instance (do not create new)
