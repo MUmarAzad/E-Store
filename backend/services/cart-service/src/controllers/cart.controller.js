@@ -36,20 +36,24 @@ const formatCartResponse = (cart) => {
   const cartObj = cart.toObject({ virtuals: true });
   
   // Transform items to keep productId as string
-  cartObj.items = cartObj.items.map(item => {
-    const productId = item.productId?._id || item.productId;
-    const product = item.productId?._id ? item.productId : undefined;
-    
-    return {
-      _id: item._id,
-      productId: productId.toString(),
-      product: product,
-      quantity: item.quantity,
-      price: item.price,
-      addedAt: item.addedAt,
-      subtotal: item.subtotal
-    };
-  });
+  // Filter out items with null productId (deleted products)
+  cartObj.items = cartObj.items
+    .filter(item => item.productId !== null)
+    .map(item => {
+      const productId = item.productId?._id || item.productId;
+      const product = item.productId?._id ? item.productId : undefined;
+      
+      return {
+        _id: item._id,
+        productId: productId ? productId.toString() : null,
+        product: product,
+        quantity: item.quantity,
+        price: item.price,
+        addedAt: item.addedAt,
+        subtotal: item.subtotal
+      };
+    })
+    .filter(item => item.productId !== null); // Remove items with invalid productId
   
   return cartObj;
 };

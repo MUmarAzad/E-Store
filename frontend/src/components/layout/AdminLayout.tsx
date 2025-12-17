@@ -5,8 +5,6 @@ import {
   Package,
   ShoppingCart,
   Users,
-  BarChart3,
-  Settings,
   FolderTree,
   ChevronLeft,
   Menu,
@@ -31,8 +29,6 @@ const AdminLayout: React.FC = () => {
     { path: ROUTES.ADMIN_CATEGORIES, icon: FolderTree, label: 'Categories' },
     { path: ROUTES.ADMIN_ORDERS, icon: ShoppingCart, label: 'Orders' },
     { path: ROUTES.ADMIN_USERS, icon: Users, label: 'Users' },
-    { path: ROUTES.ADMIN_ANALYTICS, icon: BarChart3, label: 'Analytics' },
-    { path: ROUTES.ADMIN_SETTINGS, icon: Settings, label: 'Settings' },
   ];
 
   const handleLogout = async () => {

@@ -104,7 +104,6 @@ export const API_ROUTES = {
   ADMIN: {
     ORDERS: '/admin/orders',
     USERS: '/admin/users',
-    ANALYTICS: '/admin/analytics',
   },
 } as const;
 
@@ -141,6 +140,4 @@ export const ROUTES = {
   ADMIN_ORDERS: '/admin/orders',
   ADMIN_ORDER_DETAIL: (id: string) => `/admin/orders/${id}`,
   ADMIN_USERS: '/admin/users',
-  ADMIN_ANALYTICS: '/admin/analytics',
-  ADMIN_SETTINGS: '/admin/settings',
 } as const;
