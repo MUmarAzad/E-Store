@@ -1,11 +1,11 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  Users, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Users,
+  BarChart3,
   Settings,
   FolderTree,
   ChevronLeft,
@@ -14,7 +14,7 @@ import {
   Bell
 } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/hooks';
-import { logout, toggleSidebar } from '@/store/slices';
+import { logout, toggleSidebar, clearNotifications, removeNotification } from '@/store/slices';
 import { Avatar, Button } from '@/components/common';
 import { ROUTES } from '@/utils/constants';
 import { cn } from '@/utils/helpers';
@@ -23,7 +23,7 @@ const AdminLayout: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
-  const { sidebarOpen } = useAppSelector((state) => state.ui);
+  const { sidebarOpen, notifications } = useAppSelector((state) => state.ui);
 
   const navItems = [
     { path: ROUTES.ADMIN_DASHBOARD, icon: LayoutDashboard, label: 'Dashboard' },
@@ -129,10 +129,59 @@ const AdminLayout: React.FC = () => {
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
           <h1 className="text-lg font-semibold text-gray-900">Admin Dashboard</h1>
           <div className="flex items-center gap-4">
-            <button className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full" />
-            </button>
+            <div className="relative group">
+              <button
+                className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => dispatch(clearNotifications())}
+              >
+                <Bell className="h-5 w-5" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full" />
+                )}
+              </button>
+
+              {/* Notifications Dropdown */}
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden hidden group-hover:block z-50">
+                <div className="p-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                  <h3 className="font-medium text-gray-900 text-sm">Notifications</h3>
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={() => dispatch(clearNotifications())}
+                      className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500 text-sm">
+                      No new notifications
+                    </div>
+                  ) : (
+                    notifications.slice().reverse().map((notification) => (
+                      <div key={notification.id} className={`p-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${notification.type === 'error' ? 'bg-red-50/50' :
+                        notification.type === 'success' ? 'bg-green-50/50' :
+                          notification.type === 'warning' ? 'bg-yellow-50/50' : ''
+                        }`}>
+                        {notification.title && <p className="font-medium text-sm text-gray-900 mb-0.5">{notification.title}</p>}
+                        <p className="text-sm text-gray-600">{notification.message}</p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            dispatch(removeNotification(notification.id));
+                          }}
+                          className="mt-1 text-xs text-gray-400 hover:text-gray-600"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
             <Button variant="outline" size="sm" onClick={() => navigate(ROUTES.HOME)}>
               View Store
             </Button>

@@ -27,6 +27,8 @@ import {
   OrderManagement,
   UserManagement,
   CategoryManagement,
+  Analytics,
+  Settings,
 } from '@/components/admin';
 import { Loading } from '@/components/common';
 import { ROUTES } from '@/utils/constants';
@@ -202,7 +204,7 @@ const App: React.FC = () => {
         <Route path={ROUTES.HOME} element={<HomePage />} />
         <Route path={ROUTES.PRODUCTS} element={<ProductsPage />} />
         <Route path={`${ROUTES.PRODUCTS}/:slug`} element={<ProductDetailPage />} />
-        
+
         {/* Protected Routes */}
         <Route
           path={ROUTES.CART}
@@ -262,6 +264,8 @@ const App: React.FC = () => {
         <Route path="orders" element={<OrderManagement />} />
         <Route path="orders/:id" element={<OrderManagement />} />
         <Route path="users" element={<UserManagement />} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
 
       {/* 404 */}
