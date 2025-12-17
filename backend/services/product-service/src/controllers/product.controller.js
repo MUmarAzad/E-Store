@@ -54,19 +54,22 @@ const getProducts = asyncHandler(async (req, res) => {
 
   // Price range filter
   if (req.query.minPrice || req.query.maxPrice) {
-    filter['pricing.salePrice'] = {};
+    filter.price = {};
     if (req.query.minPrice) {
-      filter['pricing.salePrice'].$gte = parseFloat(req.query.minPrice);
+      filter.price.$gte = parseFloat(req.query.minPrice);
     }
     if (req.query.maxPrice) {
-      filter['pricing.salePrice'].$lte = parseFloat(req.query.maxPrice);
+      filter.price.$lte = parseFloat(req.query.maxPrice);
     }
   }
 
   // In stock filter
   if (req.query.inStock === 'true') {
-    filter['inventory.quantity'] = { $gt: 0 };
-    filter['inventory.inStock'] = true;
+    filter.$or = [
+      { 'inventory.trackInventory': false },
+      { 'inventory.quantity': { $gt: 0 } },
+      { 'inventory.allowBackorder': true }
+    ];
   }
 
   // Featured filter

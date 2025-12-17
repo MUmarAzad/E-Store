@@ -10,7 +10,7 @@ import {
   LogOut,
   Settings,
   Package,
-  Heart,
+  // Heart, // TODO: Uncomment when wishlist feature is implemented
 } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/hooks';
 import { logout, toggleCartSidebar, setMobileMenuOpen } from '@/store/slices';
@@ -23,7 +23,7 @@ const Header: React.FC = () => {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
   const { itemCount } = useAppSelector((state) => state.cart);
   const { mobileMenuOpen } = useAppSelector((state) => state.ui);
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -109,7 +109,7 @@ const Header: React.FC = () => {
                         </p>
                         <p className="text-sm text-gray-500">{user?.email}</p>
                       </div>
-                      
+
                       <Link
                         to={ROUTES.ACCOUNT.DASHBOARD}
                         onClick={() => setUserMenuOpen(false)}
@@ -118,7 +118,7 @@ const Header: React.FC = () => {
                         <User className="h-4 w-4" />
                         My Account
                       </Link>
-                      
+
                       <Link
                         to={ROUTES.ORDERS}
                         onClick={() => setUserMenuOpen(false)}
@@ -127,7 +127,8 @@ const Header: React.FC = () => {
                         <Package className="h-4 w-4" />
                         Orders
                       </Link>
-                      
+
+                      {/* TODO: Uncomment when wishlist feature is implemented
                       <Link
                         to="/wishlist"
                         onClick={() => setUserMenuOpen(false)}
@@ -136,6 +137,7 @@ const Header: React.FC = () => {
                         <Heart className="h-4 w-4" />
                         Wishlist
                       </Link>
+                      */}
 
                       {user?.role === 'admin' && (
                         <Link

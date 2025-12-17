@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Star, Eye, Check } from 'lucide-react';
+import { ShoppingCart, Star, Eye, Check } from 'lucide-react';
+// import { Heart } from 'lucide-react'; // TODO: Uncomment when wishlist feature is implemented
 import { useAppDispatch, useAppSelector } from '@/hooks';
 import { addToCart } from '@/store/slices/cartSlice';
 import { Button, Badge } from '@/components/common';
@@ -73,12 +74,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Quick Actions */}
         <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          {/* TODO: Uncomment when wishlist feature is implemented
           <button
             className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
             title="Add to Wishlist"
           >
             <Heart className="h-5 w-5 text-gray-600" />
           </button>
+          */}
           {showQuickView && (
             <button
               onClick={handleQuickView}
@@ -142,11 +145,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className={`h-4 w-4 ${
-                    i < Math.floor(product.ratings.average)
-                      ? 'text-yellow-400 fill-yellow-400'
-                      : 'text-gray-300'
-                  }`}
+                  className={`h-4 w-4 ${i < Math.floor(product.ratings.average)
+                    ? 'text-yellow-400 fill-yellow-400'
+                    : 'text-gray-300'
+                    }`}
                 />
               ))}
             </div>
