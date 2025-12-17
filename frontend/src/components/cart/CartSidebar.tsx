@@ -152,12 +152,12 @@ const CartSidebar: React.FC = () => {
               Shipping and taxes calculated at checkout
             </p>
             <div className="space-y-2">
-              <Link to={ROUTES.CHECKOUT} onClick={handleClose}>
+              <Link to={ROUTES.CHECKOUT} onClick={handleClose} className="block w-full">
                 <Button variant="primary" fullWidth>
                   Checkout
                 </Button>
               </Link>
-              <Link to={ROUTES.CART} onClick={handleClose}>
+              <Link to={ROUTES.CART} onClick={handleClose} className="block w-full">
                 <Button variant="outline" fullWidth>
                   View Cart
                 </Button>
