@@ -2,10 +2,16 @@ const mongoose = require('mongoose');
 
 // Define minimal Product schema for population
 // This allows cart-service to populate product details without full Product model
+const imageSchema = new mongoose.Schema({
+  url: String,
+  alt: String,
+  isPrimary: Boolean
+}, { _id: false });
+
 const productSchema = new mongoose.Schema({
   name: String,
   slug: String,
-  images: [String],
+  images: [imageSchema],
   price: Number,
   compareAtPrice: Number,
   inventory: {

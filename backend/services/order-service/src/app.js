@@ -36,6 +36,16 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('combined'));
 }
 
+// Health check
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Order Service is healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
 // Routes
 app.use('/api', routes);
 

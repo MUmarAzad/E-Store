@@ -3,8 +3,6 @@
 # Distributed E-Commerce Platform with Microservices Architecture
 # =============================================================================
 
-version: '3.8'
-
 # =============================================================================
 # SERVICES
 # =============================================================================
@@ -215,25 +213,25 @@ services:
   # MongoDB - Database (DISABLED - Using MongoDB Atlas)
   # ---------------------------------------------------------------------------
   # Uncomment below if you want to use local MongoDB instead of Atlas
-  # mongodb:
-  #   image: mongo:7
-  #   container_name: estore-mongodb
-  #   restart: unless-stopped
-  #   ports:
-  #     - "27017:27017"
-  #   environment:
-  #     - MONGO_INITDB_DATABASE=estore
-  #   volumes:
-  #     - mongodb-data:/data/db
-  #     - ./docker/mongo-init:/docker-entrypoint-initdb.d:ro
-  #   networks:
-  #     - estore-network
-  #   healthcheck:
-  #     test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #     start_period: 10s
+  mongodb:
+    image: mongo:7
+    container_name: estore-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=estore
+    volumes:
+      - mongodb-data:/data/db
+      - ./docker/mongo-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - estore-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ---------------------------------------------------------------------------
   # Redis - Caching and session storage
@@ -330,8 +328,8 @@ networks:
 # VOLUMES
 # =============================================================================
 volumes:
-  # mongodb-data:  # Disabled - Using MongoDB Atlas
-  #   name: estore-mongodb-data
+  mongodb-data:
+    name: estore-mongodb-data
   redis-data:
     name: estore-redis-data
   product-images:

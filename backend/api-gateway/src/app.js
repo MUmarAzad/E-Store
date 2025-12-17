@@ -34,11 +34,21 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:3000'],
+  origin: (origin, callback) => {
+    const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:3000'];
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.onrender.com')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id']
 }));
+
+// Health check (no rate limit)
+app.use(healthRoutes);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -102,7 +112,7 @@ app.use((req, res, next) => {
 // =============================================================================
 
 // Health check (no proxy)
-app.use(healthRoutes);
+
 
 // Proxy routes to microservices
 app.use('/api', proxyRoutes);

@@ -233,12 +233,12 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Featured Products */}
+      {/* Recommended Products */}
       <section>
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-              Featured Products
+              Recommended Products
             </h2>
             <p className="text-gray-500 mt-1">
               Hand-picked just for you

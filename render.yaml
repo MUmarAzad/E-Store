@@ -1,0 +1,221 @@
+# =============================================================================
+# Render Blueprint - E-Store Microservices Deployment (Docker)
+# https://render.com/docs/blueprint-spec
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # API Gateway
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: estore-gateway
+    runtime: docker
+    region: oregon
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./api-gateway/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: USER_SERVICE_URL
+        value: https://estore-users.onrender.com
+      - key: PRODUCT_SERVICE_URL
+        value: https://estore-products.onrender.com
+      - key: CART_SERVICE_URL
+        value: https://estore-carts.onrender.com
+      - key: ORDER_SERVICE_URL
+        value: https://estore-orders.onrender.com
+      - key: JWT_SECRET
+        generateValue: true
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: estore-redis
+          property: connectionString
+      - key: CORS_ORIGIN
+        value: https://estore-web.onrender.com
+
+  # ---------------------------------------------------------------------------
+  # User Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: estore-users
+    runtime: docker
+    region: oregon
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./services/user-service/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        fromService:
+          type: web
+          name: estore-gateway
+          envVarKey: JWT_SECRET
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: FRONTEND_URL
+        value: https://estore-web.onrender.com
+
+  # ---------------------------------------------------------------------------
+  # Product Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: estore-products
+    runtime: docker
+    region: oregon
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./services/product-service/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        fromService:
+          type: web
+          name: estore-gateway
+          envVarKey: JWT_SECRET
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: estore-redis
+          property: connectionString
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+  # ---------------------------------------------------------------------------
+  # Cart Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: estore-carts
+    runtime: docker
+    region: oregon
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./services/cart-service/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3002
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        fromService:
+          type: web
+          name: estore-gateway
+          envVarKey: JWT_SECRET
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: estore-redis
+          property: connectionString
+      - key: PRODUCT_SERVICE_URL
+        value: https://estore-products.onrender.com
+      - key: FRONTEND_URL
+        value: https://estore-web.onrender.com
+
+  # ---------------------------------------------------------------------------
+  # Order Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: estore-orders
+    runtime: docker
+    region: oregon
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./services/order-service/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3003
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        fromService:
+          type: web
+          name: estore-gateway
+          envVarKey: JWT_SECRET
+      - key: USER_SERVICE_URL
+        value: https://estore-users.onrender.com
+      - key: PRODUCT_SERVICE_URL
+        value: https://estore-products.onrender.com
+      - key: CART_SERVICE_URL
+        value: https://estore-carts.onrender.com
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: FRONTEND_URL
+        value: https://estore-web.onrender.com
+
+  # ---------------------------------------------------------------------------
+  # Frontend
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: estore-web
+    runtime: docker
+    region: oregon
+    plan: free
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    port: 80
+    envVars:
+      - key: VITE_API_URL
+        value: https://estore-gateway.onrender.com/api
+      - key: VITE_SOCKET_URL
+        value: https://estore-gateway.onrender.com
+
+  # ---------------------------------------------------------------------------
+  # Redis - Use the existing instance (do not create new)
+  # ---------------------------------------------------------------------------
+  - type: redis
+    name: estore-redis
+    region: oregon
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []

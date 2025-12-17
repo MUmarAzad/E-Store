@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -9,10 +9,11 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  Ban,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/hooks';
-import { fetchOrderById } from '@/store/slices/ordersSlice';
-import { Card, Badge, Loading, EmptyState, Alert } from '@/components/common';
+import { fetchOrderById, cancelOrder } from '@/store/slices/ordersSlice';
+import { Card, Badge, Loading, EmptyState, Alert, Button, Modal } from '@/components/common';
 import { formatCurrency, formatDate } from '@/utils/helpers';
 import { ROUTES } from '@/utils/constants';
 
@@ -20,6 +21,8 @@ const OrderDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const isSuccess = searchParams.get('success') === 'true';
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const dispatch = useAppDispatch();
   const { selectedOrder: order, isLoading, error } = useAppSelector(
     (state) => state.orders
@@ -30,6 +33,21 @@ const OrderDetailPage: React.FC = () => {
       dispatch(fetchOrderById(id));
     }
   }, [dispatch, id]);
+
+  const handleCancelOrder = async () => {
+    if (!id) return;
+    setIsCancelling(true);
+    try {
+      await dispatch(cancelOrder(id)).unwrap();
+      setShowCancelModal(false);
+    } catch (err) {
+      console.error('Failed to cancel order:', err);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const canCancelOrder = order && ['pending', 'confirmed', 'processing'].includes(order.status);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -111,8 +129,51 @@ const OrderDetailPage: React.FC = () => {
             </p>
           </div>
         </div>
-        {getStatusBadge(order.status)}
+        <div className="flex items-center gap-3">
+          {getStatusBadge(order.status)}
+          {canCancelOrder && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCancelModal(true)}
+              className="text-red-600 border-red-300 hover:bg-red-50"
+            >
+              <Ban className="h-4 w-4 mr-1" />
+              Cancel Order
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Cancel Order Modal */}
+      <Modal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        title="Cancel Order"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600">
+            Are you sure you want to cancel this order? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowCancelModal(false)}
+              disabled={isCancelling}
+            >
+              Keep Order
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleCancelOrder}
+              isLoading={isCancelling}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Yes, Cancel Order
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Order Progress */}
       <Card className="p-6">
@@ -123,15 +184,14 @@ const OrderDetailPage: React.FC = () => {
               <React.Fragment key={status}>
                 <div className="flex flex-col items-center">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      order.status === status
-                        ? 'bg-primary-100'
-                        : ['pending', 'processing', 'shipped', 'delivered'].indexOf(
-                            order.status
-                          ) >= index
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${order.status === status
+                      ? 'bg-primary-100'
+                      : ['pending', 'processing', 'shipped', 'delivered'].indexOf(
+                        order.status
+                      ) >= index
                         ? 'bg-green-100'
                         : 'bg-gray-100'
-                    }`}
+                      }`}
                   >
                     {getStatusIcon(
                       ['pending', 'processing', 'shipped', 'delivered'].indexOf(
@@ -145,13 +205,12 @@ const OrderDetailPage: React.FC = () => {
                 </div>
                 {index < 3 && (
                   <div
-                    className={`flex-1 h-1 mx-2 ${
-                      ['pending', 'processing', 'shipped', 'delivered'].indexOf(
-                        order.status
-                      ) > index
-                        ? 'bg-green-500'
-                        : 'bg-gray-200'
-                    }`}
+                    className={`flex-1 h-1 mx-2 ${['pending', 'processing', 'shipped', 'delivered'].indexOf(
+                      order.status
+                    ) > index
+                      ? 'bg-green-500'
+                      : 'bg-gray-200'
+                      }`}
                   />
                 )}
               </React.Fragment>
@@ -173,7 +232,7 @@ const OrderDetailPage: React.FC = () => {
                   <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                     {item.image ? (
                       <img
-                        src={item.image}
+                        src={typeof item.image === 'string' ? item.image : item.image.url}
                         alt={item.name}
                         className="w-full h-full object-cover"
                       />
@@ -251,6 +310,10 @@ const OrderDetailPage: React.FC = () => {
                     : 'Free'}
                 </span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tax</span>
+                <span>{formatCurrency(order.pricing?.tax || 0)}</span>
+              </div>
               {(order.pricing?.discount || 0) > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
@@ -259,7 +322,7 @@ const OrderDetailPage: React.FC = () => {
               )}
               <div className="flex justify-between font-semibold text-base pt-2 border-t">
                 <span>Total</span>
-                <span>{formatCurrency(order.total)}</span>
+                <span>{formatCurrency(order.pricing?.total || 0)}</span>
               </div>
             </div>
           </Card>

@@ -73,6 +73,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
         formData.append('image', file);
         
         const response = await productService.uploadImage(formData);
+        if (!response?.url) {
+          throw new Error('No URL returned from upload');
+        }
         return response.url;
       });
 

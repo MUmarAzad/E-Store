@@ -41,9 +41,9 @@ router.patch(
 // ADMIN ROUTES
 // =============================================================================
 
-// Get all orders (admin)
+// Get all orders (admin) - dedicated admin route
 router.get(
-  '/',
+  '/admin/all',
   authenticate,
   authorize('admin'),
   orderController.getAllOrders

@@ -91,7 +91,9 @@ const CartPage: React.FC = () => {
                 <div className="w-24 h-24 md:w-32 md:h-32 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                   {item.product?.images?.[0] ? (
                     <img
-                      src={item.product.images[0].url}
+                      src={typeof item.product.images[0] === 'string'
+                        ? item.product.images[0]
+                        : item.product.images[0].url}
                       alt={item.product.name}
                       className="w-full h-full object-cover"
                     />

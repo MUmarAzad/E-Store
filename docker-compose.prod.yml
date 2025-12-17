@@ -3,16 +3,14 @@
 # Distributed E-Commerce Platform with Microservices Architecture
 # =============================================================================
 
-version: '3.8'
-
 services:
   # ---------------------------------------------------------------------------
   # API Gateway
   # ---------------------------------------------------------------------------
   api-gateway:
     build:
-      context: ./backend/api-gateway
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: ./api-gateway/Dockerfile
       target: production
     container_name: estore-api-gateway
     restart: always
@@ -50,8 +48,8 @@ services:
   # ---------------------------------------------------------------------------
   user-service:
     build:
-      context: ./backend/services/user-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: ./services/user-service/Dockerfile
       target: production
     container_name: estore-user-service
     restart: always
@@ -81,8 +79,8 @@ services:
   # ---------------------------------------------------------------------------
   product-service:
     build:
-      context: ./backend/services/product-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: ./services/product-service/Dockerfile
       target: production
     container_name: estore-product-service
     restart: always
@@ -113,8 +111,8 @@ services:
   # ---------------------------------------------------------------------------
   cart-service:
     build:
-      context: ./backend/services/cart-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: ./services/cart-service/Dockerfile
       target: production
     container_name: estore-cart-service
     restart: always
@@ -145,8 +143,8 @@ services:
   # ---------------------------------------------------------------------------
   order-service:
     build:
-      context: ./backend/services/order-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: ./services/order-service/Dockerfile
       target: production
     container_name: estore-order-service
     restart: always

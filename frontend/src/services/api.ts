@@ -2,7 +2,7 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'ax
 import { store } from '@/store';
 import { resetAuth, setTokens } from '@/store/slices/authSlice';
 
-const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000/api';
+const API_URL = (import.meta as any).env?.VITE_API_URL || 'https://estore-gateway.onrender.com/api';
 
 // Create axios instance
 const api: AxiosInstance = axios.create({

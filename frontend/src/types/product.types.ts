@@ -13,6 +13,7 @@ export interface ProductInventory {
   quantity: number;
   lowStockThreshold: number;
   trackInventory: boolean;
+  sku?: string;
 }
 
 export interface ProductAttribute {
@@ -31,7 +32,7 @@ export interface Product {
   _id: string;
   name: string;
   slug: string;
-  sku?: string;
+  sku: string;
   description?: string;
   price: number;
   compareAtPrice?: number;
@@ -40,6 +41,8 @@ export interface Product {
   images: ProductImage[];
   inventory: ProductInventory;
   stock: number;
+  inStock?: boolean;
+  primaryImage?: string | null;
   attributes: ProductAttribute[];
   tags: string[];
   status: ProductStatus;

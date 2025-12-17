@@ -22,6 +22,28 @@ const {
 const { slugify } = require('../../../../shared/utils/helpers');
 
 // =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Transform product to include virtual fields that may be lost with .lean()
+ */
+const transformProduct = (product) => {
+  if (!product) return null;
+  return {
+    ...product,
+    stock: product.stock ?? product.inventory?.quantity ?? 0,
+    inStock: product.inStock ?? (product.inventory?.quantity > 0) ?? false,
+    primaryImage: product.primaryImage ?? product.images?.[0]?.url ?? null,
+  };
+};
+
+/**
+ * Transform array of products with virtual fields
+ */
+const transformProducts = (products) => products.map(transformProduct);
+
+// =============================================================================
 // PUBLIC CONTROLLERS
 // =============================================================================
 
@@ -54,19 +76,22 @@ const getProducts = asyncHandler(async (req, res) => {
 
   // Price range filter
   if (req.query.minPrice || req.query.maxPrice) {
-    filter['pricing.salePrice'] = {};
+    filter.price = {};
     if (req.query.minPrice) {
-      filter['pricing.salePrice'].$gte = parseFloat(req.query.minPrice);
+      filter.price.$gte = parseFloat(req.query.minPrice);
     }
     if (req.query.maxPrice) {
-      filter['pricing.salePrice'].$lte = parseFloat(req.query.maxPrice);
+      filter.price.$lte = parseFloat(req.query.maxPrice);
     }
   }
 
   // In stock filter
   if (req.query.inStock === 'true') {
-    filter['inventory.quantity'] = { $gt: 0 };
-    filter['inventory.inStock'] = true;
+    filter.$or = [
+      { 'inventory.trackInventory': false },
+      { 'inventory.quantity': { $gt: 0 } },
+      { 'inventory.allowBackorder': true }
+    ];
   }
 
   // Featured filter
@@ -85,11 +110,11 @@ const getProducts = asyncHandler(async (req, res) => {
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      .lean(),
+      .lean({ virtuals: true }),
     Product.countDocuments(filter),
   ]);
 
-  return paginated(res, { data: products, page, limit, total });
+  return paginated(res, { data: transformProducts(products), page, limit, total });
 });
 
 /**
@@ -117,11 +142,11 @@ const searchProducts = asyncHandler(async (req, res) => {
       .sort({ score: { $meta: 'textScore' } })
       .skip(skip)
       .limit(parseInt(limit))
-      .lean(),
+      .lean({ virtuals: true }),
     Product.countDocuments(filter),
   ]);
 
-  return paginated(res, { data: products, page: parseInt(page), limit: parseInt(limit), total });
+  return paginated(res, { data: transformProducts(products), page: parseInt(page), limit: parseInt(limit), total });
 });
 
 /**
@@ -139,9 +164,9 @@ const getFeaturedProducts = asyncHandler(async (req, res) => {
     .populate('category', 'name slug')
     .sort({ createdAt: -1 })
     .limit(limit)
-    .lean();
+    .lean({ virtuals: true });
 
-  return success(res, { products });
+  return success(res, { products: transformProducts(products) });
 });
 
 /**
@@ -210,11 +235,11 @@ const getProductsByCategory = asyncHandler(async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .lean(),
+      .lean({ virtuals: true }),
     Product.countDocuments(filter),
   ]);
 
-  return paginated(res, { data: products, page, limit, total });
+  return paginated(res, { data: transformProducts(products), page, limit, total });
 });
 
 // =============================================================================
@@ -233,6 +258,14 @@ const createProduct = asyncHandler(async (req, res) => {
   if (!productData.slug) {
     productData.slug = slugify(productData.name);
   }
+
+  // Handle top-level SKU by moving to inventory.sku
+  if (productData.sku && productData.inventory) {
+    productData.inventory.sku = productData.sku;
+  } else if (productData.sku && !productData.inventory) {
+    productData.inventory = { sku: productData.sku };
+  }
+  delete productData.sku; // Remove top-level sku as it's a virtual
 
   // Check if slug already exists
   const existingProduct = await Product.findOne({ slug: productData.slug });
@@ -265,6 +298,14 @@ const updateProduct = asyncHandler(async (req, res) => {
   if (updates.name && !updates.slug) {
     updates.slug = slugify(updates.name);
   }
+
+  // Handle top-level SKU by moving to inventory.sku
+  if (updates.sku && updates.inventory) {
+    updates.inventory.sku = updates.sku;
+  } else if (updates.sku && !updates.inventory) {
+    updates.inventory = { sku: updates.sku };
+  }
+  delete updates.sku; // Remove top-level sku as it's a virtual
 
   // Verify category exists if updating
   if (updates.category) {
@@ -523,9 +564,9 @@ const getLowStockProducts = asyncHandler(async (req, res) => {
   .select('name slug inventory images')
   .sort({ 'inventory.quantity': 1 })
   .limit(parseInt(limit))
-  .lean();
+  .lean({ virtuals: true });
 
-  return success(res, { products: lowStockProducts });
+  return success(res, { products: transformProducts(lowStockProducts) });
 });
 
 module.exports = {

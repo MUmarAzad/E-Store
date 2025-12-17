@@ -32,6 +32,9 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
   if (!product) return null;
 
+  // Handle both stock and inventory.quantity
+  const productStock = product.stock ?? product.inventory?.quantity ?? 0;
+
   const handleAddToCart = () => {
     if (!isAuthenticated) return;
     dispatch(addToCart({ productId: product._id, quantity }));
@@ -40,7 +43,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
   const handleQuantityChange = (delta: number) => {
     const newQuantity = quantity + delta;
-    if (newQuantity >= 1 && newQuantity <= product.stock) {
+    if (newQuantity >= 1 && newQuantity <= productStock) {
       setQuantity(newQuantity);
     }
   };
@@ -49,7 +52,11 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
     ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
     : 0;
 
-  const mainImage = product.images?.[0]?.url || '/placeholder-product.png';
+  // Handle both string and object image formats
+  const firstImage = product.images?.[0];
+  const mainImage = typeof firstImage === 'string'
+    ? firstImage
+    : (firstImage?.url || product.primaryImage || '/placeholder-product.png');
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
@@ -87,11 +94,10 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className={`h-4 w-4 ${
-                      i < Math.floor(product.averageRating ?? 0)
-                        ? 'text-yellow-400 fill-yellow-400'
-                        : 'text-gray-300'
-                    }`}
+                    className={`h-4 w-4 ${i < Math.floor(product.averageRating ?? 0)
+                      ? 'text-yellow-400 fill-yellow-400'
+                      : 'text-gray-300'
+                      }`}
                   />
                 ))}
               </div>
@@ -118,9 +124,9 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
           {/* Stock */}
           <div>
-            {product.stock > 0 ? (
+            {productStock > 0 ? (
               <span className="text-green-600 font-medium">
-                In Stock ({product.stock} available)
+                In Stock ({productStock} available)
               </span>
             ) : (
               <span className="text-red-600 font-medium">Out of Stock</span>
@@ -128,7 +134,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
           </div>
 
           {/* Quantity & Add to Cart */}
-          {product.stock > 0 && (
+          {productStock > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-4">
                 <span className="text-gray-700 font-medium">Qty:</span>
@@ -143,7 +149,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
                   <span className="w-10 text-center font-medium">{quantity}</span>
                   <button
                     onClick={() => handleQuantityChange(1)}
-                    disabled={quantity >= product.stock}
+                    disabled={quantity >= productStock}
                     className="p-2 hover:bg-gray-100 disabled:opacity-50"
                   >
                     <Plus className="h-4 w-4" />

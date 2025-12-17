@@ -31,10 +31,13 @@ const OrderManagement: React.FC = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   useEffect(() => {
+    const filters: any = {};
+    if (statusFilter && statusFilter.trim() !== '') {
+      filters.status = statusFilter;
+    }
+    
     dispatch(
-      fetchAllOrders({
-        status: statusFilter as OrderStatus | undefined,
-      })
+      fetchAllOrders(filters)
     );
   }, [dispatch, currentPage, statusFilter]);
 
@@ -159,15 +162,14 @@ const OrderManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <p className="text-gray-900">
-                        {order.user?.firstName} {order.user?.lastName}
+                        User ID: {order.userId}
                       </p>
-                      <p className="text-sm text-gray-500">{order.user?.email}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-600">
                       {formatDate(order.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap font-medium">
-                      {formatCurrency(order.total)}
+                      {formatCurrency(order.pricing?.total || 0)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="relative inline-block">
@@ -256,12 +258,8 @@ const OrderManagement: React.FC = () => {
               </h4>
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                 <p className="text-sm">
-                  <span className="font-medium">Name:</span>{' '}
-                  {selectedOrder.user?.firstName} {selectedOrder.user?.lastName}
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Email:</span>{' '}
-                  {selectedOrder.user?.email}
+                  <span className="font-medium">User ID:</span>{' '}
+                  {selectedOrder.userId}
                 </p>
               </div>
             </div>
