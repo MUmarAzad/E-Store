@@ -202,7 +202,8 @@ services:
     plan: free
     rootDir: frontend
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /
+    healthCheckPath: /health
+    port: 80
     envVars:
       - key: VITE_API_URL
         value: https://estore-gateway.onrender.com/api
